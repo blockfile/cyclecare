@@ -46,3 +46,16 @@
     position: relative;
     z-index: 1;
 }
+
+@keyframes slideUp {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        transform: translateY(-100%);
+    }
+}
+
+.navbar-hide {
+    animation: slideUp 0.5s forwards;
+}
