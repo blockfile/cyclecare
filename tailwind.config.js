@@ -14,7 +14,8 @@ module.exports = {
                 // Define your custom font names and their font-family values
                 Bungee: ['"Bungee"'],
                 Sofia: ['"Sofia"'],
-                Comfortaa: ['"Comfortaa"'], // Example custom font
+                Comfortaa: ['"Comfortaa"'],
+                Shadows: ['"Shadows Into"'], // Example custom font
                 // Add more custom fonts as needed
             },
             textShadow: {

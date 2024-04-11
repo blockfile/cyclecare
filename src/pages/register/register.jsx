@@ -16,6 +16,7 @@ function Register() {
         setShowPasswordConfirm(!showPasswordConfirm);
     const [usernameError, setUsernameError] = useState("");
     const [emailError, setEmailError] = useState("");
+    const [passwordError, setPasswordError] = useState("");
 
     const [formData, setFormData] = useState({
         username: "",
@@ -38,7 +39,15 @@ function Register() {
         // Reset errors
         setUsernameError("");
         setEmailError("");
+        setPasswordError("");
 
+        const passwordRegex = /^(?=.*[A-Z])[A-Za-z\d@$!%*#?&]{7,15}$/;
+        if (!passwordRegex.test(formData.password)) {
+            setPasswordError(
+                "Password must be 8-16 characters long, start with an uppercase letter, and contain no spaces."
+            );
+            return; // Stop the form submission
+        }
         if (formData.password !== formData.confirmPassword) {
             alert("Passwords do not match!"); // Consider using a state to handle this message in the UI as well
             return;
@@ -154,8 +163,7 @@ function Register() {
                                                     }}
                                                 />
                                                 <TextField
-                                                    name="password" // Added name attribute
-                                                    onChange={handleChange} // Added onChange handler
+                                                    name="password"
                                                     label="Create Password"
                                                     variant="outlined"
                                                     type={
@@ -164,6 +172,9 @@ function Register() {
                                                             : "password"
                                                     }
                                                     fullWidth
+                                                    error={!!passwordError}
+                                                    helperText={passwordError}
+                                                    onChange={handleChange}
                                                     InputProps={{
                                                         style: {
                                                             fontFamily:

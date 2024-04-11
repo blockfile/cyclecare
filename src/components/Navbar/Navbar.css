@@ -1,0 +1,48 @@
+/* Custom transition for Navbar */
+.navbar-transition {
+    transition: background-color 0.5s ease-in-out;
+}
+
+/* Custom transition for menu items */
+.menu-item-transition:hover {
+    transition: background-color 0.5s ease-in-out;
+}
+
+/* Initial state of the menu: hidden off-screen */
+.menu-transform {
+    transform: translateY(-100%);
+    transition: transform 0.5s ease-in-out;
+}
+
+/* When the menu is open, it slides into view */
+.menu-transform.open {
+    transform: translateY(0);
+}
+
+/* Initial state of the list items */
+.menu-item {
+    position: relative;
+    overflow: hidden;
+    transition: color 0.3s;
+}
+
+.menu-item::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background-color: #f3b5d5; /* Use your desired hover background color */
+    transition: width 0.5s ease-in-out;
+    z-index: -1;
+}
+
+.menu-item:hover::after {
+    width: 100%;
+}
+
+.menu-item li {
+    position: relative;
+    z-index: 1;
+}

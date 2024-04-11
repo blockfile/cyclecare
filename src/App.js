@@ -4,6 +4,7 @@ import { useRoutes } from "react-router-dom";
 import Login from "../src/pages/login/login";
 import Register from "../src/pages/register/register";
 import Main from "../src/pages/main/main";
+
 function App() {
     let element = useRoutes([
         {
@@ -15,7 +16,7 @@ function App() {
             element: <Register />,
         },
         {
-            path: "/main", // Use a single path for authentication
+            path: "/main",
             element: <Main />,
         },
     ]);

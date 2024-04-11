@@ -19,7 +19,15 @@ mongoose
 
 app.post("/register", async (req, res) => {
     const { username, email, password } = req.body;
-
+    const passwordRegex = /^(?=.*[A-Z])[A-Za-z\d@$!%*#?&]{7,15}$/;
+    if (!passwordRegex.test(password)) {
+        return res
+            .status(400)
+            .json({
+                message:
+                    "Password must be 8-16 characters long, start with an uppercase letter, and contain no spaces.",
+            });
+    }
     try {
         // Check if the username already exists
         const userExists = await cycleCare.findOne({ username: username });
