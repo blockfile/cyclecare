@@ -59,3 +59,29 @@
 .navbar-hide {
     animation: slideUp 0.5s forwards;
 }
+.navbar {
+    position: relative; /* Ensure the navbar is positioned relative */
+    height: 56px; /* Fixed height */
+}
+
+.dropdown-content {
+    position: absolute; /* Position dropdowns absolutely within the navbar */
+    width: 100%; /* Match the width of the navbar */
+    top: 56px; /* Position just below the navbar */
+    left: 0;
+    display: none; /* Start with dropdowns hidden */
+}
+
+.navbar.expanded .dropdown-content {
+    display: block; /* Display dropdowns when navbar is expanded */
+}
+.modal-shape {
+    clip-path: polygon(
+        0px calc(100% - 22px),
+        0px 0,
+        100% 0,
+        100% calc(100% - 22px),
+        calc(100% - 22px) 100%,
+        22px 100%
+    );
+}

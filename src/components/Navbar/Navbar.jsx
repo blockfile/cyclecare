@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 import {
     Tooltip,
@@ -9,6 +9,7 @@ import {
     Avatar,
     Divider,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import Settings from "@mui/icons-material/Settings";
 import Logout from "@mui/icons-material/Logout";
 import HomeIcon from "@mui/icons-material/Home";
@@ -18,21 +19,55 @@ import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import ContactsIcon from "@mui/icons-material/Contacts";
 import logo from "../assets/images/cycle-logo.png";
 import "./Navbar.css";
-
+import { Link } from "react-router-dom";
 function Navbar() {
+    const [user, setUser] = useState({
+        username: "",
+        email: "",
+        avatar: "",
+    });
     const [anchorEl, setAnchorEl] = useState(null);
     const [isNavExpanded, setIsNavExpanded] = useState(true);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
     const handleMenuClose = () => setAnchorEl(null);
     const toggleNav = () => setIsNavExpanded(!isNavExpanded);
+    const navigate = useNavigate();
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const response = await axios.get(
+                    "http://localhost:3001/user/info",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem(
+                                "token"
+                            )}`,
+                        },
+                    }
+                );
+                setUser(response.data.user);
+            } catch (error) {
+                console.log("Error fetching user data:", error);
+            }
+        };
 
+        fetchUserData();
+    }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+
+        navigate("/");
+    };
     return (
-        <div className="w-full flex justify-center relative">
+        <div className="w-full flex justify-center z-50 absolute">
             <div
                 className={`transition-all duration-300 ease-in-out ${
-                    isNavExpanded ? "lg:w-3/4 lg:h-20 sm:h-14" : "lg:w-3/4 h-14"
-                } sm:w-full flex justify-between sm:my-0 bg-transparent bg-red-300 lg:rounded-b-xl font-Comfortaa`}>
+                    isNavExpanded
+                        ? "lg:w-3/4 lg:h-20 sm:h-14 "
+                        : "lg:w-1/2 h-14 "
+                } sm:w-full flex justify-between sm:my-0 bg-red-500  lg:rounded-b-xl font-Comfortaa `}>
                 <div className="flex items-center space-x-10 mx-auto">
                     {isNavExpanded ? (
                         <>
@@ -55,7 +90,7 @@ function Navbar() {
                         </>
                     ) : (
                         <>
-                            <div className="lg:ml-56 sm:hidden lg:block flex space-x-10">
+                            <div className="lg:ml-32 sm:hidden lg:block flex space-x-8">
                                 <HomeIcon className="cursor-pointer hover:text-red-400" />
                                 <StarBorderIcon className="cursor-pointer hover:text-red-400" />
                                 <LocalHospitalIcon className="cursor-pointer hover:text-red-400" />
@@ -75,7 +110,14 @@ function Navbar() {
                             onClick={handleMenuOpen}
                             size="small"
                             sx={{ ml: 24 }}>
-                            <Avatar sx={{ width: 32, height: 32 }} />
+                            <Avatar
+                                sx={{ width: 32, height: 32 }}
+                                src={
+                                    user.avatar
+                                        ? `data:image/jpeg;base64,${user.avatar}`
+                                        : undefined
+                                }
+                            />
                         </IconButton>
                     </Tooltip>
                     <IconButton onClick={toggleNav} size="small">
@@ -122,13 +164,23 @@ function Navbar() {
                             },
                         }}>
                         <MenuItem onClick={handleMenuClose}>
-                            <Avatar /> Profile
+                            <Avatar
+                                sx={{ width: 100, height: 100 }}
+                                src={
+                                    user.avatar
+                                        ? `data:image/jpeg;base64,${user.avatar}`
+                                        : undefined
+                                }
+                            />{" "}
+                            <Link to="/profile">Profile</Link>
                         </MenuItem>
                         <MenuItem onClick={handleMenuClose}>
                             <Settings fontSize="small" /> Settings
                         </MenuItem>
                         <Divider />
-                        <MenuItem onClick={handleMenuClose}>
+                        <MenuItem onClick={handleLogout}>
+                            {" "}
+                            {/* Call handleLogout on click */}
                             <Logout fontSize="small" /> Logout
                         </MenuItem>
                     </Menu>

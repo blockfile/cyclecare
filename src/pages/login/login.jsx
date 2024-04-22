@@ -37,8 +37,12 @@ function Login() {
                 "http://localhost:3001/login",
                 loginData
             );
+
+            // Store the token in localStorage
+            localStorage.setItem("token", response.data.token);
+
             console.log(response.data.message);
-            navigate("/main");
+            navigate("/main"); // Redirect to main page after successful login
         } catch (error) {
             // Generic error handling
             if (error.response) {
@@ -53,6 +57,7 @@ function Login() {
             }
         }
     };
+
     return (
         <div>
             <div className="flex h-screen bg-gray-100 ">

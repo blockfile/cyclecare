@@ -76,7 +76,7 @@ function Main() {
             <Navbar />
 
             {/* Content */}
-            <div className="relative z-10 flex flex-col items-center h-full">
+            <div className="relative z-10 flex flex-col items-center h-full mt-14">
                 <div className="text-center font-Comfortaa">
                     <div className="my-10">
                         <span className="text-5xl">Welcome to CycleCare!</span>

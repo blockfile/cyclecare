@@ -4,11 +4,15 @@ const cors = require("cors");
 require("dotenv").config();
 const cycleCare = require("../server/model/model");
 const app = express();
-
+const jwt = require("jsonwebtoken");
 app.use(cors());
 app.use(express.json());
 const bcrypt = require("bcryptjs");
-
+const multer = require("multer");
+const storage = multer.memoryStorage(); // Store the image in memory
+const upload = multer({ storage: storage });
+console.log("JWT Secret:", process.env.JWT_SECRET);
+app.use(cors());
 mongoose
     .connect(process.env.DATABASE_ACCESS, {
         useNewUrlParser: true,
@@ -17,16 +21,89 @@ mongoose
     .then(() => console.log("MongoDB connected..."))
     .catch((err) => console.log(err));
 
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+    if (!token) return res.sendStatus(401); // No token, return 401 Unauthorized
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403); // Invalid token, return 403 Forbidden
+        req.user = user;
+        next();
+    });
+}
+
+app.put("/user/update", authenticateToken, async (req, res) => {
+    const { userId } = req.user;
+    const { username, email } = req.body;
+    try {
+        const updatedUser = await cycleCare.findByIdAndUpdate(
+            userId,
+            { username, email },
+            { new: true }
+        );
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.json({ message: "User updated successfully", user: updatedUser });
+    } catch (error) {
+        console.error("Update user error:", error);
+        res.status(500).json({
+            message: "Failed to update user",
+            error: error.toString(),
+        });
+    }
+});
+
+app.get("/user/info", authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const user = await cycleCare.findById(userId).select("-password"); // Fetch user without password field
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.json({ user });
+    } catch (error) {
+        console.error("Error fetching user data:", error);
+        res.status(500).json({
+            message: "Error fetching user data",
+            error: error.message,
+        });
+    }
+});
+app.post(
+    "/user/upload-avatar",
+    authenticateToken,
+    upload.single("avatar"),
+    async (req, res) => {
+        const { userId } = req.user; // Now req.user should be defined if the token is valid
+
+        const avatarData = req.file.buffer.toString("base64");
+        try {
+            const user = await cycleCare.findByIdAndUpdate(
+                userId,
+                { avatar: avatarData },
+                { new: true }
+            );
+            res.json({
+                message: "Avatar updated successfully",
+                avatar: user.avatar,
+            });
+        } catch (error) {
+            res.status(500).send({
+                message: "Failed to update avatar",
+                error: error.message,
+            });
+        }
+    }
+);
 app.post("/register", async (req, res) => {
     const { username, email, password } = req.body;
     const passwordRegex = /^(?=.*[A-Z])[A-Za-z\d@$!%*#?&]{7,15}$/;
     if (!passwordRegex.test(password)) {
-        return res
-            .status(400)
-            .json({
-                message:
-                    "Password must be 8-16 characters long, start with an uppercase letter, and contain no spaces.",
-            });
+        return res.status(400).json({
+            message:
+                "Password must be 8-16 characters long, start with an uppercase letter, and contain no spaces.",
+        });
     }
     try {
         // Check if the username already exists
@@ -76,9 +153,17 @@ app.post("/login", async (req, res) => {
             return res.status(400).json({ message: "Invalid password" });
         }
 
-        // Login successful
+        // Generate a token
+        const token = jwt.sign(
+            { userId: user._id, username: user.username },
+            process.env.JWT_SECRET, // Make sure you have a JWT_SECRET in your .env file
+            { expiresIn: "1h" } // Token expires in one hour
+        );
+
+        // Login successful, send back the token
         res.json({
             message: "Login successful",
+            token,
             user: { id: user._id, username: user.username },
         });
     } catch (error) {
