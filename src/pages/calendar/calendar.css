@@ -1,0 +1,82 @@
+.calendar-container {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-family: "Arial", sans-serif;
+    max-width: 600px; /* Adjust width as needed */
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+.calendar-header {
+    background: pink; /* Or use a specific color code */
+    padding: 16px 10px;
+    text-align: center;
+}
+
+.calendar-header h1 {
+    margin: 0;
+    font-size: 24px;
+    color: #333; /* Or any color you prefer */
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* 7 days of the week */
+    text-align: center;
+    padding: 20px;
+}
+.menstruation {
+    background-color: #ffcccc; /* Light red background */
+}
+
+.day-of-week {
+    font-weight: bold;
+    padding: 30px;
+    color: #333; /* Or any color you prefer */
+}
+
+.day {
+    padding: 25px; /* Adjust padding as needed */
+    border-bottom: 1px solid #eee; /* Light line to separate rows */
+    font-family: "Comfortaa";
+    transition: background-color 0.3s ease; /* Transition for smooth background color change */
+}
+
+.day:hover {
+    background-color: red; /* New background color on hover */
+    cursor: pointer;
+}
+
+.custom-context-menu {
+    position: absolute;
+    z-index: 10;
+    background-color: white;
+    border: 1px solid #ddd;
+    box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+
+.context-menu-option {
+    padding: 10px 15px;
+    cursor: pointer;
+}
+
+.context-menu-option:hover {
+    background-color: #f0f0f0;
+}
+
+.day.marked {
+    background-color: #ffebef; /* Light red background for marked days */
+    position: relative;
+}
+
+.day.marked svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.menstruation {
+    background-color: #ffcccc;
+}

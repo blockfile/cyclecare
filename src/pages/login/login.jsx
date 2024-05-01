@@ -29,8 +29,8 @@ function Login() {
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setUsernameError(""); // Reset username error state
-        setPasswordError(""); // Reset password error state
+        setUsernameError("");
+        setPasswordError("");
 
         try {
             const response = await axios.post(
@@ -38,13 +38,16 @@ function Login() {
                 loginData
             );
 
-            // Store the token in localStorage
             localStorage.setItem("token", response.data.token);
-
             console.log(response.data.message);
-            navigate("/main"); // Redirect to main page after successful login
+
+            // Check the user data to decide redirection
+            if (!response.data.cycle || !response.data.lastMenstrualDate) {
+                navigate("/survey"); // Redirect to survey if cycle or lastMenstrualDate is missing
+            } else {
+                navigate("/main"); // Redirect to main if both are present
+            }
         } catch (error) {
-            // Generic error handling
             if (error.response) {
                 const message = error.response.data.message;
                 if (message.includes("Invalid username or email")) {

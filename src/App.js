@@ -6,6 +6,9 @@ import Register from "../src/pages/register/register";
 import Main from "../src/pages/main/main";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Profile from "./pages/profile/profile";
+import CalendarMens from "./pages/calendar/calendar";
+import Survey from "./pages/survey/survey";
+import Survey2 from "./pages/survey/survey2";
 function App() {
     let element = useRoutes([
         {
@@ -16,6 +19,7 @@ function App() {
             path: "/register",
             element: <Register />,
         },
+
         {
             element: <ProtectedRoute />,
             children: [
@@ -23,10 +27,36 @@ function App() {
                     path: "/profile",
                     element: <Profile />,
                 },
-                // You can add more protected routes here
             ],
         },
-        // Protected routes wrapper
+        {
+            element: <ProtectedRoute />,
+            children: [
+                {
+                    path: "/survey",
+                    element: <Survey />,
+                },
+            ],
+        },
+        {
+            element: <ProtectedRoute />,
+            children: [
+                {
+                    path: "/survey2",
+                    element: <Survey2 />,
+                },
+            ],
+        },
+        {
+            element: <ProtectedRoute />,
+            children: [
+                {
+                    path: "/calendar",
+                    element: <CalendarMens />,
+                },
+            ],
+        },
+
         {
             element: <ProtectedRoute />,
             children: [
@@ -34,7 +64,6 @@ function App() {
                     path: "/main",
                     element: <Main />,
                 },
-                // You can add more protected routes here
             ],
         },
     ]);

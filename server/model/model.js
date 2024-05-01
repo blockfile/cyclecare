@@ -7,6 +7,9 @@ const cycleCareSchema = new mongoose.Schema(
         email: { type: String, required: true, unique: true },
         password: { type: String, required: true },
         avatar: { type: String },
+        cycle: { type: String },
+        startDate: { type: Date },
+        endDate: { type: Date },
     },
     { timestamps: true }
 );

@@ -13,26 +13,31 @@ import { useNavigate } from "react-router-dom";
 import Settings from "@mui/icons-material/Settings";
 import Logout from "@mui/icons-material/Logout";
 import HomeIcon from "@mui/icons-material/Home";
-import { MenuIcon, XIcon } from "@heroicons/react/outline";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
 import ContactsIcon from "@mui/icons-material/Contacts";
-import logo from "../assets/images/cycle-logo.png";
 import "./Navbar.css";
 import { Link } from "react-router-dom";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { CiCalendarDate } from "react-icons/ci";
 function Navbar() {
-    const [user, setUser] = useState({
-        username: "",
-        email: "",
-        avatar: "",
-    });
+    const [user, setUser] = useState({ username: "", email: "", avatar: "" });
     const [anchorEl, setAnchorEl] = useState(null);
+    const [featuresDropdown, setFeaturesDropdown] = useState(false);
     const [isNavExpanded, setIsNavExpanded] = useState(true);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const theme = useTheme();
+    const isLargeScreen = useMediaQuery(theme.breakpoints.up("lg"));
     const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
     const handleMenuClose = () => setAnchorEl(null);
-    const toggleNav = () => setIsNavExpanded(!isNavExpanded);
+    const toggleNav = () => {
+        if (isLargeScreen) {
+            // Prevent toggling in small screens
+            setIsNavExpanded(!isNavExpanded);
+        }
+    };
     const navigate = useNavigate();
+
     useEffect(() => {
         const fetchUserData = async () => {
             try {
@@ -54,12 +59,23 @@ function Navbar() {
 
         fetchUserData();
     }, []);
+    useEffect(() => {
+        setIsNavExpanded(isLargeScreen);
+    }, [isLargeScreen]);
 
     const handleLogout = () => {
         localStorage.removeItem("token");
-
         navigate("/");
     };
+
+    const handleFeaturesHover = () => {
+        setFeaturesDropdown(true);
+    };
+
+    const handleFeaturesLeave = () => {
+        setFeaturesDropdown(false);
+    };
+
     return (
         <div className="w-full flex justify-center z-50 absolute">
             <div
@@ -73,16 +89,35 @@ function Navbar() {
                         <>
                             <div className="ml-56  space-x-10 sm:hidden lg:flex">
                                 <div className="text-center cursor-pointer hover:text-red-400">
-                                    {" "}
-                                    <HomeIcon className="" /> <p>About</p>
+                                    <HomeIcon /> <p>About</p>
                                 </div>
-                                <div className="text-center cursor-pointer hover:text-red-400">
+                                <div
+                                    className="text-center cursor-pointer hover:text-red-400"
+                                    onMouseEnter={handleFeaturesHover}
+                                    onMouseLeave={handleFeaturesLeave}>
                                     <StarBorderIcon /> <p>Features</p>
+                                    {featuresDropdown && (
+                                        <div className="absolute bg-white shadow-md rounded-md">
+                                            <Link to="/calendar">
+                                                <div className="py-2 px-4 hover:bg-gray-200 cursor-pointer rounded-md bg-red-200 text-black flex">
+                                                    <div className=" my-auto">
+                                                        <CiCalendarDate
+                                                            size={24}
+                                                        />
+                                                    </div>
+                                                    <div className="my-auto mt-1">
+                                                        <span className="">
+                                                            Calendar
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="text-center cursor-pointer hover:text-red-400">
                                     <LocalHospitalIcon /> <p>Health</p>
                                 </div>
-
                                 <div className="text-center cursor-pointer hover:text-red-400">
                                     <ContactsIcon /> <p>Contact Us</p>
                                 </div>
@@ -90,21 +125,50 @@ function Navbar() {
                         </>
                     ) : (
                         <>
-                            <div className="lg:ml-32 sm:hidden lg:block flex space-x-8">
-                                <HomeIcon className="cursor-pointer hover:text-red-400" />
-                                <StarBorderIcon className="cursor-pointer hover:text-red-400" />
-                                <LocalHospitalIcon className="cursor-pointer hover:text-red-400" />
-                                <ContactsIcon className="cursor-pointer hover:text-red-400" />
+                            <div className=" absolute  sm:pl-8  lg:block flex ">
+                                <div className=" flex sm:space-x-10 lg:space-x-8 ">
+                                    <div>
+                                        <HomeIcon className="cursor-pointer hover:text-red-400" />
+                                    </div>
+                                    <div
+                                        onMouseEnter={handleFeaturesHover}
+                                        onMouseLeave={handleFeaturesLeave}
+                                        className="">
+                                        <StarBorderIcon className="cursor-pointer hover:text-red-400" />
+                                        {featuresDropdown && (
+                                            <div className="absolute bg-white shadow-md  rounded-md">
+                                                <Link to="/calendar">
+                                                    <div className="py-2 px-4 hover:bg-gray-200 cursor-pointer rounded-md bg-red-200 text-black flex">
+                                                        <div className=" my-auto">
+                                                            <CiCalendarDate
+                                                                size={24}
+                                                            />
+                                                        </div>
+
+                                                        <div className="my-auto mt-1">
+                                                            <span className="">
+                                                                Calendar
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        {" "}
+                                        <LocalHospitalIcon className="cursor-pointer hover:text-red-400" />
+                                    </div>
+                                    <div>
+                                        {" "}
+                                        <ContactsIcon className="cursor-pointer hover:text-red-400" />
+                                    </div>
+                                </div>
                             </div>
                         </>
                     )}
                 </div>
-                <div className="flex items-center space-x-4 mr-4">
-                    <img
-                        src={logo}
-                        alt="logo"
-                        className="h-14 w-14 lg:hidden absolute left-0 ml-20"
-                    />
+                <div className="flex relative sm:right-0 sm:mt-2 ">
                     <Tooltip title="Account settings">
                         <IconButton
                             onClick={handleMenuOpen}
@@ -124,12 +188,12 @@ function Navbar() {
                         {isNavExpanded ? (
                             <IoIosArrowUp
                                 size={30}
-                                className="sm:hidden lg:block"
+                                className="sm:hidden xl:block"
                             />
                         ) : (
                             <IoIosArrowDown
                                 size={30}
-                                className="lg:block sm:hidden"
+                                className="xl:block sm:hidden"
                             />
                         )}
                     </IconButton>
@@ -184,62 +248,10 @@ function Navbar() {
                             <Logout fontSize="small" /> Logout
                         </MenuItem>
                     </Menu>
-                    <div className="lg:hidden flex items-center justify-end p-4">
-                        <button onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                            {isMenuOpen ? (
-                                <XIcon className="h-6 w-6" />
-                            ) : (
-                                <MenuIcon className="h-6 w-6" />
-                            )}
-                        </button>
-                    </div>
 
                     <div className="flex items-center space-x-4 mr-4">
                         {/* Account settings and more */}
                     </div>
-                </div>
-                <div
-                    className={`absolute top-full w-full backdrop-blur-md z-50 ${
-                        isMenuOpen ? "flex" : "hidden"
-                    } flex-col lg:hidden h-screen text-center transition-all duration-300 ease-in-out`}>
-                    <ul className="py-5 space-y-2 font-Bungee text-red-400 mx-14 menu-item-transition">
-                        <div className="w-full border-2 border-pink-400 rounded-lg cursor-pointer menu-item">
-                            <li className="my-2 flex justify-center">
-                                {" "}
-                                <HomeIcon />
-                                <div className="mt-0.5">
-                                    <span className="">About</span>
-                                </div>
-                            </li>
-                        </div>
-                        <div className="w-full border-2 border-pink-400 rounded-lg cursor-pointer menu-item">
-                            <li className="my-2 flex justify-center">
-                                {" "}
-                                <StarBorderIcon />
-                                <div className="mt-0.5 ">
-                                    <span className="">Features</span>
-                                </div>
-                            </li>
-                        </div>
-                        <div className="w-full border-2 border-pink-400 rounded-lg cursor-pointer menu-item">
-                            <li className="my-2 flex justify-center">
-                                {" "}
-                                <LocalHospitalIcon />
-                                <div className="mt-0.5 justify-center">
-                                    <span className="">Health</span>
-                                </div>
-                            </li>
-                        </div>
-                        <div className="w-full border-2 border-pink-400 rounded-lg cursor-pointer menu-item">
-                            <li className="my-2 flex justify-center">
-                                {" "}
-                                <ContactsIcon />
-                                <div className="mt-0.5">
-                                    <span className="">Contact Us</span>
-                                </div>
-                            </li>
-                        </div>
-                    </ul>
                 </div>
             </div>
         </div>

@@ -32,6 +32,48 @@ function authenticateToken(req, res, next) {
     });
 }
 
+app.post("/user/last-menstrual", authenticateToken, async (req, res) => {
+    const { startDate, endDate } = req.body;
+    const { userId } = req.user;
+    try {
+        const updatedUser = await cycleCare.findByIdAndUpdate(
+            userId,
+            { startDate, endDate }, // Make sure these match the field names in your schema
+            { new: true }
+        );
+        res.json({
+            message: "Menstrual dates updated successfully",
+            user: updatedUser,
+        });
+    } catch (error) {
+        console.error("Update menstrual dates error:", error);
+        res.status(500).json({
+            message: "Failed to update menstrual dates",
+            error: error.message,
+        });
+    }
+});
+
+app.post("/user/cycle", authenticateToken, async (req, res) => {
+    const { cycle } = req.body;
+    const { userId } = req.user;
+
+    try {
+        const updatedUser = await cycleCare.findByIdAndUpdate(
+            userId,
+            { cycle },
+            { new: true }
+        );
+        res.json({ message: "Cycle updated successfully", user: updatedUser });
+    } catch (error) {
+        console.error("Update cycle error:", error);
+        res.status(500).json({
+            message: "Failed to update cycle",
+            error: error.message,
+        });
+    }
+});
+
 app.put("/user/update", authenticateToken, async (req, res) => {
     const { userId } = req.user;
     const { username, email } = req.body;
@@ -137,10 +179,11 @@ app.post("/login", async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        // Check both username or email for login credentials
-        const user = await cycleCare.findOne({
-            $or: [{ username }, { email: username }],
-        });
+        const user = await cycleCare
+            .findOne({
+                $or: [{ username }, { email: username }],
+            })
+            .select("+password"); // Ensure password is selected for verification
 
         if (!user) {
             return res
@@ -153,18 +196,18 @@ app.post("/login", async (req, res) => {
             return res.status(400).json({ message: "Invalid password" });
         }
 
-        // Generate a token
         const token = jwt.sign(
             { userId: user._id, username: user.username },
-            process.env.JWT_SECRET, // Make sure you have a JWT_SECRET in your .env file
-            { expiresIn: "1h" } // Token expires in one hour
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
         );
 
-        // Login successful, send back the token
+        // Send the necessary fields to decide the redirection in the frontend
         res.json({
             message: "Login successful",
             token,
-            user: { id: user._id, username: user.username },
+            cycle: user.cycle,
+            lastMenstrualDate: user.lastMenstrualDate,
         });
     } catch (error) {
         console.error(error);
