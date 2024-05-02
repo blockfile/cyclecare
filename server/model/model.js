@@ -10,6 +10,12 @@ const cycleCareSchema = new mongoose.Schema(
         cycle: { type: String },
         startDate: { type: Date },
         endDate: { type: Date },
+        periods: [
+            {
+                start: Date,
+                end: Date,
+            },
+        ],
     },
     { timestamps: true }
 );

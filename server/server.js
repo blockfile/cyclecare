@@ -53,6 +53,92 @@ app.post("/user/last-menstrual", authenticateToken, async (req, res) => {
         });
     }
 });
+app.post("/periods/start", authenticateToken, async (req, res) => {
+    const { start } = req.body;
+    const userId = req.user.userId; // Assuming your auth system sets `req.user`
+
+    try {
+        const updatedUser = await cycleCare.findByIdAndUpdate(
+            userId,
+            { $push: { periods: { start: new Date(start), end: null } } },
+            { new: true }
+        );
+        res.status(200).json({
+            message: "Period started successfully",
+            periods: updatedUser.periods,
+        });
+    } catch (error) {
+        console.error("Error starting period:", error);
+        res.status(500).json({
+            message: "Failed to start period",
+            error: error.message,
+        });
+    }
+});
+app.post("/periods/end", authenticateToken, async (req, res) => {
+    const { end } = req.body;
+    const userId = req.user.userId;
+
+    try {
+        // Fetch the user first to get the latest period that hasn't ended
+        const user = await cycleCare.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const periods = user.periods;
+        const lastPeriod = periods.find((p) => !p.end);
+        if (lastPeriod) {
+            lastPeriod.end = new Date(end);
+            await user.save();
+            res.status(200).json({
+                message: "Period ended successfully",
+                periods: user.periods,
+            });
+        } else {
+            res.status(400).json({ message: "No open period to end" });
+        }
+    } catch (error) {
+        console.error("Error ending period:", error);
+        res.status(500).json({
+            message: "Failed to end period",
+            error: error.message,
+        });
+    }
+});
+app.delete("/periods/delete", authenticateToken, async (req, res) => {
+    const { date } = req.body;
+    const userId = req.user.userId;
+
+    try {
+        const user = await cycleCare.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Filter out the period that matches the date
+        const newPeriods = user.periods.filter((period) => {
+            return !(
+                new Date(period.start).getTime() <= new Date(date).getTime() &&
+                new Date(date).getTime() <= new Date(period.end).getTime()
+            );
+        });
+
+        user.periods = newPeriods;
+        await user.save();
+
+        res.status(200).json({
+            message: "Period deleted successfully",
+            periods: user.periods,
+        });
+    } catch (error) {
+        console.error("Error deleting period:", error);
+        res.status(500).json({
+            message: "Failed to delete period",
+            error: error.message,
+        });
+    }
+});
 
 app.post("/user/cycle", authenticateToken, async (req, res) => {
     const { cycle } = req.body;
@@ -99,7 +185,7 @@ app.put("/user/update", authenticateToken, async (req, res) => {
 app.get("/user/info", authenticateToken, async (req, res) => {
     try {
         const userId = req.user.userId;
-        const user = await cycleCare.findById(userId).select("-password"); // Fetch user without password field
+        const user = await cycleCare.findById(userId).select("-password"); // Ensure this includes the cycle length
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -112,6 +198,7 @@ app.get("/user/info", authenticateToken, async (req, res) => {
         });
     }
 });
+
 app.post(
     "/user/upload-avatar",
     authenticateToken,
@@ -207,7 +294,7 @@ app.post("/login", async (req, res) => {
             message: "Login successful",
             token,
             cycle: user.cycle,
-            lastMenstrualDate: user.lastMenstrualDate,
+            startDate: user.startDate,
         });
     } catch (error) {
         console.error(error);

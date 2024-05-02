@@ -42,7 +42,7 @@ function Login() {
             console.log(response.data.message);
 
             // Check the user data to decide redirection
-            if (!response.data.cycle || !response.data.lastMenstrualDate) {
+            if (!response.data.cycle || !response.data.startDate) {
                 navigate("/survey"); // Redirect to survey if cycle or lastMenstrualDate is missing
             } else {
                 navigate("/main"); // Redirect to main if both are present
