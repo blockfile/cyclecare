@@ -21,6 +21,8 @@ import { Link } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { CiCalendarDate } from "react-icons/ci";
+import logo from "../../components/assets/images/cycle-logo.png";
+
 function Navbar() {
     const [user, setUser] = useState({ username: "", email: "", avatar: "" });
     const [anchorEl, setAnchorEl] = useState(null);
@@ -32,7 +34,6 @@ function Navbar() {
     const handleMenuClose = () => setAnchorEl(null);
     const toggleNav = () => {
         if (isLargeScreen) {
-            // Prevent toggling in small screens
             setIsNavExpanded(!isNavExpanded);
         }
     };
@@ -59,6 +60,7 @@ function Navbar() {
 
         fetchUserData();
     }, []);
+
     useEffect(() => {
         setIsNavExpanded(isLargeScreen);
     }, [isLargeScreen]);
@@ -83,14 +85,25 @@ function Navbar() {
                     isNavExpanded
                         ? "lg:w-3/4 lg:h-20 sm:h-14 "
                         : "lg:w-1/2 h-14 "
-                } sm:w-full flex justify-between sm:my-0 bg-red-500  lg:rounded-b-xl font-Comfortaa `}>
+                } sm:w-full flex justify-between sm:my-0 bg-pink-200  lg:rounded-b-xl font-Comfortaa `}>
+                <img
+                    src={logo}
+                    alt="Logo"
+                    style={{
+                        height: isNavExpanded ? "80px" : "50px", // Adjust sizes as needed
+                        width: isNavExpanded ? "80px" : "50px",
+                    }}
+                />
+
                 <div className="flex items-center space-x-10 mx-auto">
                     {isNavExpanded ? (
                         <>
-                            <div className="ml-56  space-x-10 sm:hidden lg:flex">
-                                <div className="text-center cursor-pointer hover:text-red-400">
-                                    <HomeIcon /> <p>About</p>
-                                </div>
+                            <div className="ml-56  space-x-10 sm:hidden lg:flex ">
+                                <Link to="/main">
+                                    <div className="text-center cursor-pointer hover:text-red-400">
+                                        <HomeIcon /> <p>Home</p>
+                                    </div>
+                                </Link>
                                 <div
                                     className="text-center cursor-pointer hover:text-red-400"
                                     onMouseEnter={handleFeaturesHover}
@@ -112,12 +125,22 @@ function Navbar() {
                                                     </div>
                                                 </div>
                                             </Link>
+                                            <Link to="/moodtracker">
+                                                <div className="py-2 px-4 hover:bg-gray-200 cursor-pointer rounded-md bg-red-200 text-black flex">
+                                                    <div className="my-auto">
+                                                        <LocalHospitalIcon fontSize="small" />
+                                                    </div>
+                                                    <div className="my-auto mt-1">
+                                                        <span className="">
+                                                            Mood Tracker
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </Link>
                                         </div>
                                     )}
                                 </div>
-                                <div className="text-center cursor-pointer hover:text-red-400">
-                                    <LocalHospitalIcon /> <p>Health</p>
-                                </div>
+
                                 <div className="text-center cursor-pointer hover:text-red-400">
                                     <ContactsIcon /> <p>Contact Us</p>
                                 </div>
@@ -152,13 +175,22 @@ function Navbar() {
                                                         </div>
                                                     </div>
                                                 </Link>
+                                                <Link to="/moodtracker">
+                                                    <div className="py-2 px-4 hover:bg-gray-200 cursor-pointer rounded-md bg-red-200 text-black flex">
+                                                        <div className="my-auto">
+                                                            <LocalHospitalIcon fontSize="small" />
+                                                        </div>
+                                                        <div className="my-auto mt-1">
+                                                            <span className="">
+                                                                Mood Tracker
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </Link>
                                             </div>
                                         )}
                                     </div>
-                                    <div>
-                                        {" "}
-                                        <LocalHospitalIcon className="cursor-pointer hover:text-red-400" />
-                                    </div>
+
                                     <div>
                                         {" "}
                                         <ContactsIcon className="cursor-pointer hover:text-red-400" />
@@ -243,8 +275,6 @@ function Navbar() {
                         </MenuItem>
                         <Divider />
                         <MenuItem onClick={handleLogout}>
-                            {" "}
-                            {/* Call handleLogout on click */}
                             <Logout fontSize="small" /> Logout
                         </MenuItem>
                     </Menu>

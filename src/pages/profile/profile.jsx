@@ -1,21 +1,25 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import "./profile.css";
+import "./profile.css"; // For custom styles
 import Navbar from "../../components/Navbar/Navbar";
-import bg from "../../components/assets/videos/bg.mp4";
 import Footer from "../../components/Footer/Footer";
 import { Avatar, Button } from "@mui/material";
 
 function Profile() {
     const [user, setUser] = useState({ username: "", email: "", avatar: "" });
-    const [isHovering, setIsHovering] = useState(false); // State to track hovering
+    const [isHovering, setIsHovering] = useState(false);
     const fileInputRef = useRef(null);
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({
         username: "",
         email: "",
+        age: "",
+        contact: "",
+        lastPeriod: "",
+        irregular: "", // This will store "Yes" or "No"
     });
     const [errors, setErrors] = useState({});
+
     useEffect(() => {
         const fetchUserData = async () => {
             try {
@@ -33,6 +37,14 @@ function Profile() {
                 setFormData({
                     username: response.data.user.username,
                     email: response.data.user.email,
+                    age: response.data.user.age || "", // Default to empty string if not present
+                    contact: response.data.user.contact || "", // Default to empty string if not present
+                    lastPeriod: response.data.user.lastPeriod
+                        ? new Date(response.data.user.lastPeriod)
+                              .toISOString()
+                              .substr(0, 10)
+                        : "",
+                    irregular: response.data.user.irregular || "No", // Fetch "Yes" or "No" from DB
                 });
             } catch (error) {
                 console.log("Error fetching user data:", error);
@@ -40,15 +52,18 @@ function Profile() {
         };
         fetchUserData();
     }, []);
+
     const toggleEditMode = () => {
         setEditMode(!editMode);
     };
+
     const handleChange = (e) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value,
         });
     };
+
     const handleSave = async () => {
         try {
             const response = await axios.put(
@@ -63,34 +78,13 @@ function Profile() {
                 }
             );
             setUser(response.data.user);
-            setEditMode(false); // Exit edit mode after save
+            setEditMode(false); // Exit edit mode after saving
             console.log("Update successful:", response.data.message);
         } catch (error) {
             console.log("Error updating user data:", error);
-            setErrors({ save: "Failed to update profile" }); // Handle errors
+            setErrors({ save: "Failed to update profile" });
         }
     };
-
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const response = await axios.get(
-                    "http://localhost:3001/user/info",
-                    {
-                        headers: {
-                            Authorization: `Bearer ${localStorage.getItem(
-                                "token"
-                            )}`,
-                        },
-                    }
-                );
-                setUser(response.data.user);
-            } catch (error) {
-                console.log("Error fetching user data:", error);
-            }
-        };
-        fetchUserData();
-    }, []);
 
     const handleImageUpload = async (event) => {
         const file = event.target.files[0];
@@ -118,48 +112,22 @@ function Profile() {
     const triggerFileSelect = () => fileInputRef.current.click();
 
     return (
-        <div className="relative overflow-x-hidden">
-            <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="object-cover h-full w-full absolute z-0">
-                <source src={bg} type="video/mp4" />
-            </video>
-            <div className="absolute z-5 h-full w-full bg-gradient-to-b from-transparent to-white"></div>
+        <div>
             <Navbar />
-            <div className="relative z-10 flex flex-col items-center h-full mt-14 mx-auto text-justify">
-                <div className="my-10 space-y-4 bg-red-200 mt-24 px-24 pb-24 pt-10 rounded-xl font-Comfortaa shadow-2xl">
-                    <Button
-                        onClick={toggleEditMode}
-                        sx={{
-                            position: "absolute",
-                            top: "100px",
-                            right: "780px",
-                        }}>
-                        {editMode ? "Cancel" : "Edit"}
-                    </Button>
-                    <div
-                        className="avatar-container relative"
-                        onMouseEnter={() => setIsHovering(true)}
-                        onMouseLeave={() => setIsHovering(false)}>
+
+            <div className="profile-page">
+                <div className="profile-container">
+                    <h2 className=" text-3xl">Customize your profile</h2>
+                    <div className="avatar-container">
                         <Avatar
-                            sx={{ width: 100, height: 100 }}
                             src={
                                 user.avatar
                                     ? `data:image/jpeg;base64,${user.avatar}`
                                     : undefined
                             }
+                            className="avatar"
                             onClick={triggerFileSelect}
                         />
-                        {isHovering && (
-                            <div
-                                className="avatar-overlay"
-                                onClick={triggerFileSelect}>
-                                Change Avatar
-                            </div>
-                        )}
                         <input
                             type="file"
                             ref={fileInputRef}
@@ -167,43 +135,77 @@ function Profile() {
                             style={{ display: "none" }}
                         />
                     </div>
-                    {editMode ? (
-                        <>
-                            <div className="input-field">
-                                <label>Username:</label>
+                    <form className="profile-form">
+                        <label>Name</label>
+                        <input
+                            type="text"
+                            name="username"
+                            value={formData.username}
+                            onChange={handleChange}
+                            disabled={!editMode}
+                        />
+
+                        <label>Age</label>
+                        <input
+                            type="number"
+                            name="age"
+                            value={formData.age}
+                            onChange={handleChange}
+                            disabled={!editMode}
+                        />
+
+                        <label>Contact #</label>
+                        <input
+                            type="text"
+                            name="contact"
+                            value={formData.contact}
+                            onChange={handleChange}
+                            disabled={!editMode}
+                        />
+
+                        <label>Are you irregular?</label>
+                        <div className="irregular-options">
+                            <label>
                                 <input
-                                    type="text"
-                                    name="username"
-                                    value={formData.username}
+                                    type="radio"
+                                    name="irregular"
+                                    value="Yes"
+                                    checked={formData.irregular === "Yes"}
                                     onChange={handleChange}
+                                    disabled={!editMode}
                                 />
-                            </div>
-                            <div className="input-field">
-                                <label>Email:</label>
+                                Yes
+                            </label>
+                            <label>
                                 <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
+                                    type="radio"
+                                    name="irregular"
+                                    value="No"
+                                    checked={formData.irregular === "No"}
                                     onChange={handleChange}
+                                    disabled={!editMode}
                                 />
-                            </div>
-                            <Button onClick={handleSave} sx={{ mt: 2 }}>
+                                No
+                            </label>
+                        </div>
+
+                        {editMode ? (
+                            <Button
+                                onClick={handleSave}
+                                className="save-button">
                                 Save
                             </Button>
-                        </>
-                    ) : (
-                        <>
-                            <p>
-                                <b>Username:</b> {user.username}
-                            </p>
-                            <p>
-                                <b>Email:</b> {user.email}
-                            </p>
-                        </>
-                    )}
+                        ) : (
+                            <Button
+                                onClick={toggleEditMode}
+                                className="edit-button">
+                                Edit
+                            </Button>
+                        )}
+                    </form>
                 </div>
+                <Footer />
             </div>
-            <Footer />
         </div>
     );
 }

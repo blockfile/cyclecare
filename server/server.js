@@ -11,7 +11,7 @@ const bcrypt = require("bcryptjs");
 const multer = require("multer");
 const storage = multer.memoryStorage(); // Store the image in memory
 const upload = multer({ storage: storage });
-console.log("JWT Secret:", process.env.JWT_SECRET);
+
 app.use(cors());
 mongoose
     .connect(process.env.DATABASE_ACCESS, {
@@ -27,6 +27,7 @@ function authenticateToken(req, res, next) {
     if (!token) return res.sendStatus(401); // No token, return 401 Unauthorized
     jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
         if (err) return res.sendStatus(403); // Invalid token, return 403 Forbidden
+
         req.user = user;
         next();
     });
@@ -53,16 +54,19 @@ app.post("/user/last-menstrual", authenticateToken, async (req, res) => {
         });
     }
 });
+// Backend: Start Period Route
 app.post("/periods/start", authenticateToken, async (req, res) => {
     const { start } = req.body;
-    const userId = req.user.userId; // Assuming your auth system sets `req.user`
+    const userId = req.user.userId;
 
     try {
+        // Push a new period with only a start date
         const updatedUser = await cycleCare.findByIdAndUpdate(
             userId,
-            { $push: { periods: { start: new Date(start), end: null } } },
+            { $push: { periods: { start: new Date(start), end: null } } }, // Push a new period with only a start date
             { new: true }
         );
+
         res.status(200).json({
             message: "Period started successfully",
             periods: updatedUser.periods,
@@ -75,22 +79,80 @@ app.post("/periods/start", authenticateToken, async (req, res) => {
         });
     }
 });
-app.post("/periods/end", authenticateToken, async (req, res) => {
-    const { end } = req.body;
+
+app.get("/user/mood-data", authenticateToken, async (req, res) => {
+    const { userId } = req.user; // Get userId from the authenticated token
+    try {
+        // Fetch the user by ID and retrieve the moodTracker field
+        const user = await cycleCare.findById(userId).select("moodTracker");
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Send back the user's mood data
+        res.json({ moodTracker: user.moodTracker });
+    } catch (error) {
+        console.error("Error fetching mood data:", error);
+        res.status(500).json({
+            message: "Failed to fetch mood data",
+            error: error.message,
+        });
+    }
+});
+
+app.post("/user/save-mood", authenticateToken, async (req, res) => {
+    const { date, mood } = req.body;
     const userId = req.user.userId;
 
     try {
-        // Fetch the user first to get the latest period that hasn't ended
         const user = await cycleCare.findById(userId);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        const periods = user.periods;
-        const lastPeriod = periods.find((p) => !p.end);
+        // Convert the incoming date to just the date portion (ignore time)
+        const formattedDate = new Date(date).toDateString();
+
+        // Check if there's already a mood entry for this date
+        const existingMood = user.moodTracker.find(
+            (entry) => new Date(entry.date).toDateString() === formattedDate
+        );
+
+        if (existingMood) {
+            // Update the existing mood
+            existingMood.mood = mood;
+        } else {
+            // Add a new mood entry for this date
+            user.moodTracker.push({ date, mood });
+        }
+
+        await user.save();
+
+        res.status(200).json({ message: "Mood saved successfully" });
+    } catch (error) {
+        console.error("Error saving mood:", error);
+        res.status(500).json({ message: "Failed to save mood" });
+    }
+});
+
+// Backend: End Period Route
+app.post("/periods/end", authenticateToken, async (req, res) => {
+    const { end } = req.body;
+    const userId = req.user.userId;
+
+    try {
+        // Find the most recent period that doesn't have an end date
+        const user = await cycleCare.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const lastPeriod = user.periods.find((p) => !p.end);
         if (lastPeriod) {
-            lastPeriod.end = new Date(end);
+            lastPeriod.end = new Date(end); // Set the end date for the last period
             await user.save();
+
             res.status(200).json({
                 message: "Period ended successfully",
                 periods: user.periods,
@@ -106,6 +168,7 @@ app.post("/periods/end", authenticateToken, async (req, res) => {
         });
     }
 });
+
 app.delete("/periods/delete", authenticateToken, async (req, res) => {
     const { date } = req.body;
     const userId = req.user.userId;
@@ -141,18 +204,37 @@ app.delete("/periods/delete", authenticateToken, async (req, res) => {
 });
 
 app.post("/user/cycle", authenticateToken, async (req, res) => {
-    const { cycle } = req.body;
-    const { userId } = req.user;
+    const { cycle, irregular } = req.body; // Expect cycle and irregular fields
+    const { userId } = req.user; // Assuming userId is set in the token
+
+    // Log the incoming data for debugging
 
     try {
-        const updatedUser = await cycleCare.findByIdAndUpdate(
-            userId,
-            { cycle },
-            { new: true }
-        );
-        res.json({ message: "Cycle updated successfully", user: updatedUser });
+        if (!userId) {
+            return res.status(400).json({ message: "User ID not found" });
+        }
+
+        // Fetch the user and log it
+        const user = await cycleCare.findById(userId);
+        if (!user) {
+            console.log("User not found");
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Log the user before update
+        console.log("User before update:", user);
+
+        // Update the cycle and irregular fields
+        user.cycle = cycle;
+        user.irregular = irregular;
+        await user.save();
+
+        // Log after the save
+        console.log("User after update:", user);
+
+        res.json({ message: "Cycle updated successfully", user });
     } catch (error) {
-        console.error("Update cycle error:", error);
+        console.error("Error updating cycle data:", error.message);
         res.status(500).json({
             message: "Failed to update cycle",
             error: error.message,
@@ -162,11 +244,12 @@ app.post("/user/cycle", authenticateToken, async (req, res) => {
 
 app.put("/user/update", authenticateToken, async (req, res) => {
     const { userId } = req.user;
-    const { username, email } = req.body;
+    const { username, email, age, contact, irregular, lastPeriod } = req.body;
+
     try {
         const updatedUser = await cycleCare.findByIdAndUpdate(
             userId,
-            { username, email },
+            { username, email, age, contact, irregular, lastPeriod },
             { new: true }
         );
         if (!updatedUser) {
@@ -261,7 +344,55 @@ app.post("/register", async (req, res) => {
         });
     }
 });
+app.get("/periods", authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const user = await cycleCare.findById(userId).select("periods");
 
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Filter periods to only return those that have ended in the past
+        const currentDate = new Date();
+        const pastPeriods = user.periods.filter((period) => {
+            return !period.end || new Date(period.end) <= currentDate;
+        });
+
+        res.json({ periods: pastPeriods });
+    } catch (error) {
+        console.error("Error fetching periods:", error);
+        res.status(500).json({
+            message: "Failed to fetch periods",
+            error: error.message,
+        });
+    }
+});
+app.get("/user/cycle-data", authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.userId; // Assuming the token includes userId
+        const user = await cycleCare
+            .findById(userId)
+            .select("periods startDate endDate");
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Send the cycle data as a response
+        res.json({
+            start: user.startDate, // Assuming these fields exist in your schema
+            end: user.endDate,
+            periods: user.periods, // Assuming 'periods' is the array with past periods
+        });
+    } catch (error) {
+        console.error("Error fetching cycle data:", error);
+        res.status(500).json({
+            message: "Failed to fetch cycle data",
+            error: error.message,
+        });
+    }
+});
 app.post("/login", async (req, res) => {
     const { username, password } = req.body;
 

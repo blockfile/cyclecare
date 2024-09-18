@@ -7,6 +7,9 @@ const cycleCareSchema = new mongoose.Schema(
         email: { type: String, required: true, unique: true },
         password: { type: String, required: true },
         avatar: { type: String },
+        irregular: { type: String },
+        age: { type: Number },
+        contact: { type: String },
         cycle: { type: String },
         startDate: { type: Date },
         endDate: { type: Date },
@@ -14,6 +17,12 @@ const cycleCareSchema = new mongoose.Schema(
             {
                 start: Date,
                 end: Date,
+            },
+        ],
+        moodTracker: [
+            {
+                date: { type: Date, required: true },
+                mood: { type: String, required: true },
             },
         ],
     },

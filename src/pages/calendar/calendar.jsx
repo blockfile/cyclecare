@@ -8,8 +8,15 @@ import bg from "../../components/assets/videos/bg.mp4";
 import Footer from "../../components/Footer/Footer";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import ovule from "../../components/assets/images/ovule.png";
+import { Pie } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from "chart.js";
+import { AiOutlineRight, AiOutlineLeft } from "react-icons/ai";
+// Register required elements in Chart.js
+ChartJS.register(ArcElement, Tooltip, Legend, Title);
+
 function CalendarMens() {
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [showHistory, setShowHistory] = useState(true);
     const [menstruationPeriod, setMenstruationPeriod] = useState({
         start: null,
         end: null,
@@ -34,6 +41,125 @@ function CalendarMens() {
     const [lastMenstrualDate, setLastMenstrualDate] = useState(null);
     const [menstrualCycleLength, setMenstrualCycleLength] = useState(28);
     const [menstruationPeriods, setMenstruationPeriods] = useState([]);
+    const [prediction, setPrediction] = useState(null);
+
+    const predictNextMenstruation = (periods) => {
+        if (periods.length < 2) return null;
+
+        periods.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+        const cycleDifferences = periods
+            .map((_, index) => {
+                if (index === 0) return null;
+                const prevPeriod = periods[index - 1];
+                const currentPeriod = periods[index];
+                const diff =
+                    (new Date(currentPeriod.start) - new Date(prevPeriod.end)) /
+                    (1000 * 60 * 60 * 24); // Difference in days
+                return diff;
+            })
+            .filter(Boolean);
+
+        const isIrregular = cycleDifferences.some((diff, index) => {
+            if (index === 0) return false;
+            return Math.abs(diff - cycleDifferences[index - 1]) > 3;
+        });
+
+        const averageCycleLength =
+            cycleDifferences.reduce((a, b) => a + b, 0) /
+            cycleDifferences.length;
+
+        const lastPeriodEnd = new Date(periods[periods.length - 1].end);
+
+        const nextPeriodStart = new Date(lastPeriodEnd.getTime());
+        nextPeriodStart.setDate(
+            lastPeriodEnd.getDate() +
+                (isIrregular
+                    ? averageCycleLength
+                    : cycleDifferences[cycleDifferences.length - 1])
+        );
+
+        // Predict the 5 days around the expected start
+        const day1 = new Date(nextPeriodStart.getTime());
+        const day2 = new Date(nextPeriodStart.getTime());
+        day2.setDate(nextPeriodStart.getDate() + 1);
+        const day3 = new Date(nextPeriodStart.getTime());
+        day3.setDate(nextPeriodStart.getDate() + 2);
+        const day4 = new Date(nextPeriodStart.getTime());
+        day4.setDate(nextPeriodStart.getDate() + 3);
+        const day5 = new Date(nextPeriodStart.getTime());
+        day5.setDate(nextPeriodStart.getDate() + 4);
+
+        return {
+            day1,
+            day2,
+            day3,
+            day4,
+            day5,
+        };
+    };
+
+    useEffect(() => {
+        const fetchPrediction = async () => {
+            const token = localStorage.getItem("token");
+            try {
+                const response = await axios.get(
+                    "http://localhost:3001/periods",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (response.data && response.data.periods) {
+                    setPastPeriods(response.data.periods);
+                    const predictedDates = predictNextMenstruation(
+                        response.data.periods
+                    );
+                    setPrediction(predictedDates);
+                }
+            } catch (error) {
+                console.error("Failed to fetch past periods:", error);
+            }
+        };
+
+        fetchPrediction();
+    }, []);
+    const toggleHistory = () => {
+        setShowHistory(!showHistory); // Toggle history visibility
+    };
+    const pieData = {
+        labels: [
+            `Day 1 (${prediction?.day1?.toLocaleDateString() || "N/A"})`,
+            `Day 2 (${prediction?.day2?.toLocaleDateString() || "N/A"})`,
+            `Day 3 (${prediction?.day3?.toLocaleDateString() || "N/A"})`,
+            `Day 4 (${prediction?.day4?.toLocaleDateString() || "N/A"})`,
+            `Day 5 (${prediction?.day5?.toLocaleDateString() || "N/A"})`,
+        ],
+        datasets: [
+            {
+                label: "Menstruation Prediction",
+                data: [60, 70, 80, 90, 100], // Adjust likelihood percentages accordingly
+                backgroundColor: [
+                    "rgba(255, 99, 132, 0.2)",
+                    "rgba(54, 162, 235, 0.2)",
+                    "rgba(75, 192, 192, 0.2)",
+                    "rgba(153, 102, 255, 0.2)",
+                    "rgba(255, 159, 64, 0.2)",
+                ],
+                borderColor: [
+                    "rgba(255, 99, 132, 1)",
+                    "rgba(54, 162, 235, 1)",
+                    "rgba(75, 192, 192, 1)",
+                    "rgba(153, 102, 255, 1)",
+                    "rgba(255, 159, 64, 1)",
+                ],
+                borderWidth: 1,
+            },
+        ],
+    };
+
     useEffect(() => {
         const fetchUserCycleData = async () => {
             const token = localStorage.getItem("token");
@@ -106,15 +232,12 @@ function CalendarMens() {
             const nextStart = new Date(lastPeriodEnd.getTime());
             nextStart.setDate(nextStart.getDate() + menstrualCycleLength);
             const nextEnd = new Date(nextStart.getTime());
-            nextEnd.setDate(nextEnd.getDate() + 5); // Assuming period lasts 5 days
+            nextEnd.setDate(nextEnd.getDate() + 5);
 
-            // Predicting ovulation 14 days before the start of the next period
             const ovulationDay = new Date(nextStart.getTime());
             ovulationDay.setDate(nextStart.getDate() - 14);
 
-            // Extend ovulation prediction to cover the fertile window
             for (let j = -4; j <= 0; j++) {
-                // 5 days window: 4 days before and the day of ovulation
                 const fertileDay = new Date(ovulationDay);
                 fertileDay.setDate(fertileDay.getDate() + j);
                 ovulations.push(fertileDay);
@@ -152,6 +275,16 @@ function CalendarMens() {
     ];
     const daysOfWeek = ["S", "M", "T", "W", "T", "F", "S"];
     const currentMonthName = monthNames[currentDate.getMonth()];
+    const pieOptions = {
+        maintainAspectRatio: false,
+        responsive: true,
+        plugins: {
+            legend: {
+                display: true,
+                position: "right", // Or wherever you want the legend to appear
+            },
+        },
+    };
 
     useEffect(() => {
         if (lastMenstrualDate) {
@@ -192,7 +325,6 @@ function CalendarMens() {
             currentDate.getMonth(),
             day
         );
-        // Add new period with only start date set
         addMenstruationPeriod({ start: startDate, end: null });
 
         const response = await fetch("http://localhost:3001/periods/start", {
@@ -210,7 +342,7 @@ function CalendarMens() {
             console.error("Failed to start period");
         }
 
-        setContextMenuPos({ visible: false }); // Hide context menu
+        setContextMenuPos({ visible: false });
     };
 
     const markMenstruationEnd = async (day) => {
@@ -221,7 +353,6 @@ function CalendarMens() {
             day
         );
 
-        // Find the period that is open and set its end date
         const updatedPeriods = menstruationPeriods.map((period) => {
             if (!period.end && period.start <= endDate) {
                 return { ...period, end: endDate };
@@ -235,7 +366,7 @@ function CalendarMens() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`, // ensure you handle authentication
+                Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({ end: endDate }),
         });
@@ -246,11 +377,10 @@ function CalendarMens() {
             console.error("Failed to end period");
         }
 
-        setContextMenuPos({ visible: false }); // Hide context menu
+        setContextMenuPos({ visible: false });
     };
 
     const cancelMenstruationPeriod = () => {
-        // Option 1: Remove the last open period
         setMenstruationPeriods((prevPeriods) =>
             prevPeriods.filter((period) => period.end !== null)
         );
@@ -258,13 +388,13 @@ function CalendarMens() {
         setMenstruationPeriods((prevPeriods) =>
             prevPeriods.map((period) => {
                 if (!period.end) {
-                    return { ...period, end: new Date(period.start) }; // Mark end as the same as start
+                    return { ...period, end: new Date(period.start) };
                 }
                 return period;
             })
         );
 
-        setContextMenuPos({ visible: false }); // Hide context menu
+        setContextMenuPos({ visible: false });
     };
     const predictNextPeriod = (date, cycleLength) => {
         const predictionStartDate = new Date(date.getTime());
@@ -272,7 +402,7 @@ function CalendarMens() {
             predictionStartDate.getDate() + cycleLength
         );
         const predictionEndDate = new Date(predictionStartDate.getTime());
-        predictionEndDate.setDate(predictionEndDate.getDate() + 5); // Assuming a period lasts for 5 days
+        predictionEndDate.setDate(predictionEndDate.getDate() + 5);
         return { start: predictionStartDate, end: predictionEndDate };
     };
     const isOvulationDay = (day) => {
@@ -294,7 +424,7 @@ function CalendarMens() {
             currentDate.getMonth(),
             day
         );
-        checkDate.setHours(0, 0, 0, 0); // Normalize the date for comparison
+        checkDate.setHours(0, 0, 0, 0);
 
         return menstruationPeriods.some((period) => {
             const start = new Date(period.start).setHours(0, 0, 0, 0);
@@ -399,80 +529,176 @@ function CalendarMens() {
         document.addEventListener("click", closeMenu);
         return () => document.removeEventListener("click", closeMenu);
     }, []);
+    const [pastPeriods, setPastPeriods] = useState([]);
+
+    useEffect(() => {
+        const fetchPastPeriods = async () => {
+            const token = localStorage.getItem("token");
+            try {
+                const response = await axios.get(
+                    "http://localhost:3001/periods",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (response.data && response.data.periods) {
+                    setPastPeriods(response.data.periods);
+                }
+            } catch (error) {
+                console.error("Failed to fetch past periods:", error);
+            }
+        };
+
+        fetchPastPeriods();
+    }, []);
 
     return (
         <div
-            className="relative overflow-x-hidden"
+            className="relative overflow-x-hidden bg-pink-50"
             onClick={() => setContextMenuPos({ visible: false })}>
-            <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="object-cover h-full w-full absolute z-0">
-                <source src={bg} type="video/mp4" />
-            </video>
             <Navbar />
             <div className="relative z-10 flex flex-col items-center h-full mt-14 mx-auto text-justify">
-                <div className="my-24 bg-red-300 py-10 px-24 rounded-lg">
-                    <div className=" bg-red-500 relative my-4 rounded-xl">
-                        <div className=" flex space-x-3 mx-2 py-1 ">
-                            <div className=" border rounded-full">
-                                <Avatar
-                                    src={
-                                        userData.avatar
-                                            ? `data:image/jpeg;base64,${userData.avatar}`
-                                            : undefined
-                                    }
-                                    alt="User Avatar"
-                                />
-                            </div>
-                            <div className="my-auto uppercase text-3xl font-Comfortaa">
-                                <p>{userData.username}</p>
-                            </div>
+                <div>
+                    <div className="flex space-x-3 mx-2 py-1 pt-10 justify-center">
+                        <div className="border rounded-full">
+                            <Avatar
+                                src={
+                                    userData.avatar
+                                        ? `data:image/jpeg;base64,${userData.avatar}`
+                                        : undefined
+                                }
+                                alt="User Avatar"
+                            />
+                        </div>
+                        <div className="my-auto uppercase text-3xl font-Comfortaa">
+                            <span>{userData.username}</span>
+                            <span>'S Calendar</span>
                         </div>
                     </div>
-                    <div className="calendar-container">
-                        {hoverInfo.visible && (
-                            <div
-                                className="hover-info"
-                                style={{
-                                    position: "absolute",
-                                    top: hoverInfo.position.y + 2, // 10 pixels below the cursor
-                                    left: hoverInfo.position.x + 2, // 10 pixels right of the cursor
-                                    padding: "10px",
-                                    background: "white",
-                                    border: "1px solid #ccc",
-                                    zIndex: 1000,
-                                }}>
-                                {hoverInfo.content}
-                            </div>
-                        )}
-                        <header className="calendar-header flex justify-between items-center">
-                            <FaArrowLeft
-                                onClick={goToPreviousMonth}
-                                size={25}
-                                className="cursor-pointer  hover:text-red-500"
-                            />
-                            <h1 className="font-Comfortaa">{`${currentMonthName.toUpperCase()} ${currentDate.getFullYear()}`}</h1>
-                            <FaArrowRight
-                                onClick={goToNextMonth}
-                                size={25}
-                                className="cursor-pointer hover:text-red-500"
-                            />
-                        </header>
-                        <div className="calendar-grid">
-                            {daysOfWeek.map((day, index) => (
-                                <div
-                                    key={`${day}-${index}`}
-                                    className="day-of-week">
-                                    {day}
+                    <div className="flex w-full">
+                        {/* Calendar Section */}
+                        <div
+                            className={`relative my-4 rounded-l-xl flex-grow transition-all duration-500 ${
+                                showHistory ? "w-2/3" : "w-full"
+                            }`}>
+                            <div className="calendar-container">
+                                {hoverInfo.visible && (
+                                    <div
+                                        className="hover-info absolute p-2 bg-white border border-gray-300 z-10"
+                                        style={{
+                                            top: hoverInfo.position.y + 2,
+                                            left: hoverInfo.position.x + 2,
+                                        }}>
+                                        {hoverInfo.content}
+                                    </div>
+                                )}
+                                <header className="calendar-header flex justify-between items-center">
+                                    <FaArrowLeft
+                                        onClick={goToPreviousMonth}
+                                        size={25}
+                                        className="cursor-pointer hover:text-red-500"
+                                    />
+                                    <h1 className="font-Comfortaa">{`${currentMonthName.toUpperCase()} ${currentDate.getFullYear()}`}</h1>
+                                    <FaArrowRight
+                                        onClick={goToNextMonth}
+                                        size={25}
+                                        className="cursor-pointer hover:text-red-500"
+                                    />
+                                </header>
+                                <div className="calendar-grid">
+                                    {daysOfWeek.map((day, index) => (
+                                        <div
+                                            key={`${day}-${index}`}
+                                            className="day-of-week">
+                                            {day}
+                                        </div>
+                                    ))}
+                                    {renderDayCells()}
                                 </div>
-                            ))}
-                            {renderDayCells()}
+                            </div>
+                        </div>
+
+                        {/* History Toggle Button */}
+                        <div className="flex items-center">
+                            {showHistory ? (
+                                <AiOutlineLeft
+                                    size={30}
+                                    onClick={toggleHistory}
+                                    className="cursor-pointer hover:text-pink-500 transition-transform duration-300"
+                                />
+                            ) : (
+                                <AiOutlineRight
+                                    size={30}
+                                    onClick={toggleHistory}
+                                    className="cursor-pointer hover:text-pink-500 transition-transform duration-300"
+                                />
+                            )}
+                        </div>
+
+                        {/* Menstrual History Section */}
+                        <div
+                            className={`bg-pink-100 py-4 px-8 rounded-lg h-[566px]   font-Comfortaa transition-all duration-500 overflow-hidden ${
+                                showHistory
+                                    ? "w-1/3 mt-4 mb-4 opacity-100 "
+                                    : "w-0 opacity-0"
+                            }`}>
+                            {showHistory && (
+                                <>
+                                    {" "}
+                                    <div className=" border-b-2 mb-2">
+                                        <h2 className="text-xl font-bold mb-4 ">
+                                            Menstrual History
+                                        </h2>
+                                    </div>
+                                    {pastPeriods.length === 0 ? (
+                                        <p>No past periods recorded.</p>
+                                    ) : (
+                                        <ul className="past-periods-list overflow-y-auto h-full">
+                                            {pastPeriods.map(
+                                                (period, index) => (
+                                                    <li
+                                                        key={index}
+                                                        className="mb-2">
+                                                        <strong>Start:</strong>{" "}
+                                                        {new Date(
+                                                            period.start
+                                                        ).toLocaleDateString()}
+                                                        <br />
+                                                        <strong>
+                                                            End:
+                                                        </strong>{" "}
+                                                        {new Date(
+                                                            period.end
+                                                        ).toLocaleDateString()}
+                                                        <hr />
+                                                    </li>
+                                                )
+                                            )}
+                                        </ul>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
+                {prediction && (
+                    <div
+                        className="my-8 py-4 px-8 rounded-lg w-full md:w-1/3"
+                        style={{ minHeight: "300px" }}>
+                        <h2 className="text-3xl font-bold mb-4 text-center font-Comfortaa">
+                            Menstrual Prediction for Next Cycle
+                        </h2>
+
+                        <div
+                            className="chart-container"
+                            style={{ height: "300px", width: "100%" }}>
+                            <Pie data={pieData} options={pieOptions} />
+                        </div>
+                    </div>
+                )}
             </div>
             <Footer />
             {contextMenuPos.visible && (

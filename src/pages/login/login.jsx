@@ -213,27 +213,18 @@ function Login() {
                                     </div>
                                 </form>
                             </div>
-                            <div className="w-full md:w-[300px] relative z-50 xl:w-[300px] h-[600px] bg-pink-300 rounded-br-2xl md:rounded-bl-none rounded-2xl md:rounded-none hidden md:block">
+                            <div className="w-full md:w-[300px] relative z-50 xl:w-[300px] h-[600px] bg-pink-200 rounded-br-2xl md:rounded-bl-none rounded-2xl md:rounded-none hidden md:block">
                                 <div className=" w-full relative">
                                     <div className=" ml-10 mt-24 font-2">
                                         <img
-                                            src={calendar}
+                                            src={logo}
                                             alt="calendar-logo"
-                                            className="h-36 w-36"
+                                            className="h-50 w-50"
                                         />
                                     </div>
-                                    <div className="ml-10 my-10 space-y-5">
-                                        <p className=" text-4xl font-Bungee font-2 ">
-                                            TRACK
-                                        </p>
-                                        <p className=" text-2xl font-Bungee font-2">
-                                            YOUR
-                                        </p>
-                                        <p className=" text-4xl font-Bungee font-2 animate-pulse">
-                                            MENSTRUAL
-                                        </p>
-                                        <p className=" text-2xl font-Bungee font-2">
-                                            CYCLE
+                                    <div className="flex items-start justify-center ml-3 mt-[-36px] mb-5 space-y-5">
+                                        <p className=" text-3xl font-Bungee font-2 animate-pulse">
+                                            CycleCare
                                         </p>
                                     </div>
                                 </div>

@@ -1,11 +1,13 @@
 .calendar-container {
     background: #fff;
+    box-shadow: 4 2px 0px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     font-family: "Arial", sans-serif;
     max-width: 600px; /* Adjust width as needed */
     margin: 0 auto;
     overflow: hidden;
+    flex-grow: 1;
+    transition: width 0.5s ease;
 }
 
 .calendar-header {
@@ -89,4 +91,15 @@
     position: fixed; /* Use fixed to position relative to the viewport */
     display: inline-block;
     pointer-events: none; /* Makes sure the tooltip doesn't interfere with mouse events */
+}
+.history-container {
+    max-width: 0;
+    overflow: hidden;
+    transition: max-width 0.5s ease, opacity 0.5s ease;
+    opacity: 0;
+}
+
+.history-container.open {
+    max-width: 500px; /* Adjust to the width you want when expanded */
+    opacity: 1;
 }
