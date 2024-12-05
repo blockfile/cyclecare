@@ -9,6 +9,8 @@ module.exports = {
             xl: "1280px", // Desktops
             "2xl": "1536px", // Large screens
         },
+
+        
         extend: {
             fontFamily: {
                 // Define your custom font names and their font-family values
@@ -17,10 +19,16 @@ module.exports = {
                 Comfortaa: ['"Comfortaa"'],
                 Shadows: ['"Shadows Into"'], // Example custom font
                 // Add more custom fonts as needed
+
+EmilysCandy: ['"Emilys Candy"'],
+
+SourGummy: ['"Sour Gummy"'],
             },
             textShadow: {
                 // Define your custom text shadows here
                 default: "0 2px 4px rgba(0, 0, 0, 0.5)",
+
+                
             },
         },
     },

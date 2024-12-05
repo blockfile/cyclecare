@@ -19,13 +19,13 @@ function MoodTracker() {
     const [moodData, setMoodData] = useState({}); // Store mood data for each day
 
     const moods = [
-        { icon: <FaSmile size={40} />, label: "Happy" },
-        { icon: <FaMeh size={40} />, label: "Neutral" },
-        { icon: <FaGrinStars size={40} />, label: "Excited" },
-        { icon: <FaFrown size={40} />, label: "Sad" },
-        { icon: <FaSadCry size={40} />, label: "Very Sad" },
-        { icon: <FaAngry size={40} />, label: "Angry" },
-    ];
+        { icon: <FaSmile size={40} color="#FFD700" />, label: "Happy", color: "#FFD700" }, // Yellow
+        { icon: <FaMeh size={40} color="#A9A9A9" />, label: "Neutral", color: "#A9A9A9" }, // Gray
+        { icon: <FaGrinStars size={40} color="#FFC107" />, label: "Excited", color: "#FFC107" }, // Light Orange
+        { icon: <FaFrown size={40} color="#87CEEB" />, label: "Sad", color: "#87CEEB" }, // Light Blue
+        { icon: <FaSadCry size={40} color="#4169E1" />, label: "Very Sad", color: "#4169E1" }, // Royal Blue
+        { icon: <FaAngry size={40} color="#FF4500" />, label: "Angry", color: "#FF4500" } // Red-Orange
+      ];
 
     // Fetch mood data from the backend when the component loads or currentDate changes
     useEffect(() => {
@@ -163,11 +163,11 @@ function MoodTracker() {
     };
 
     return (
-        <div className="relative overflow-x-hidden bg-pink-50">
+        <div className="relative overflow-x-hidden bg-pink-100">
             <Navbar />
             <div className="relative z-10 flex flex-col items-center h-full mt-14 mx-auto text-justify">
-                <div className="my-10 space-y-4 bg-pink-200 px-10 py-8 rounded-xl shadow-2xl font-Comfortaa text-center">
-                    <h2 className="text-3xl mb-8">Track Your Mood Over Time</h2>
+                <div className="my-10 space-y-4 bg-pink-200 px-10 py-8 rounded-xl shadow-2xl font-SourGummy text-center">
+                    <h2 className="text-3xl font-SourGummy mb-8">Track Your Mood Over Time</h2>
                     <div className="calendar-container">
                         <header className="calendar-header flex justify-between items-center">
                             <FaArrowLeft
@@ -175,7 +175,7 @@ function MoodTracker() {
                                 size={25}
                                 className="cursor-pointer hover:text-red-500"
                             />
-                            <h1 className="font-Comfortaa">{`${currentMonthName.toUpperCase()} ${currentDate.getFullYear()}`}</h1>
+                            <h1 className="font-SourGummy">{`${currentMonthName.toUpperCase()} ${currentDate.getFullYear()}`}</h1>
                             <FaArrowRight
                                 onClick={goToNextMonth}
                                 size={25}
@@ -192,8 +192,8 @@ function MoodTracker() {
                         </div>
                     </div>
                     {/* Mood Selection Section */}
-                    <div className="my-10 space-y-4 bg-pink-200 px-10 py-8 rounded-xl shadow-2xl font-Comfortaa text-center">
-                        <h2 className="text-3xl mb-8">
+                    <div className="my-10 space-y-4 bg-pink-200 px-10 py-8 rounded-xl shadow-2xl font-SourGummy text-center">
+                        <h2 className="text-3xl font-SourGummy mb-8">
                             How are you feeling today?
                         </h2>
                         <div className="grid grid-cols-3 gap-6 mx-auto">

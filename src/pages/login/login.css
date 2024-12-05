@@ -31,3 +31,11 @@
 .back {
     transform: rotateY(180deg);
 }
+
+
+
+.emilys-candy-regular {
+    font-family: "Emilys Candy", serif;
+    font-weight: 400;
+    font-style: normal;
+  }

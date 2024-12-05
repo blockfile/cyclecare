@@ -4,7 +4,7 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import { IconButton, InputAdornment } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import calendar from "../../components/assets/images/calendar.png";
+import logo from "../../components/assets/images/cycle-logo.png";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -21,6 +21,7 @@ function Register() {
     const [formData, setFormData] = useState({
         username: "",
         email: "",
+        age: "",
         password: "",
         confirmPassword: "",
     });
@@ -40,6 +41,7 @@ function Register() {
         setUsernameError("");
         setEmailError("");
         setPasswordError("");
+        setAgeError(""); // Add this line
 
         const passwordRegex = /^(?=.*[A-Z])[A-Za-z\d@$!%*#?&]{7,15}$/;
         if (!passwordRegex.test(formData.password)) {
@@ -52,13 +54,18 @@ function Register() {
             alert("Passwords do not match!"); // Consider using a state to handle this message in the UI as well
             return;
         }
+        if (formData.age < 13 || formData.age > 45) {
+            setAgeError("Age must be between 13 and 45.");
+            return;
+        }
 
         try {
-            const { username, email, password } = formData;
+            const { username, email, password, age } = formData;
             await axios.post("http://localhost:3001/register", {
                 username,
                 email,
                 password,
+                age,
             });
 
             alert("Registration successful");
@@ -71,6 +78,8 @@ function Register() {
                     setUsernameError("Username already exists.");
                 } else if (message.includes("Email already exists")) {
                     setEmailError("Email already exists.");
+                } else if (message.includes("Age must be between 13 and 45.")) {
+                    setAgeError(message);
                 }
             } else {
                 alert("An unknown error occurred."); // Consider handling this error in a more user-friendly way
@@ -78,8 +87,10 @@ function Register() {
         }
     };
 
+    const [ageError, setAgeError] = useState(""); // Add this line
+
     return (
-        <div className="flex h-screen bg-gray-100">
+        <div className="flex h-screen bg-gradient-to-r from-pink-100 via-pink-200 to-pink-300">
             <div className="m-auto">
                 <div className="shadow-2xl rounded-2xl overflow-hidden mx-4 ">
                     <div className="md:flex ">
@@ -89,7 +100,7 @@ function Register() {
                                 className="p-10 space-y-10">
                                 <div className="p-10 space-y-10">
                                     <div>
-                                        <span className="text-4xl font-Bungee font">
+                                        <span className="text-4xl font-EmilysCandy font">
                                             Register
                                         </span>
                                         <span className=" text-7xl text-pink-300 animate-pulse">
@@ -105,6 +116,7 @@ function Register() {
                                     <div>
                                         <div className="w-full flex flex-col space-y-4">
                                             <div className="space-y-4">
+
                                                 <TextField
                                                     name="username"
                                                     label="Username"
@@ -162,6 +174,36 @@ function Register() {
                                                         },
                                                     }}
                                                 />
+                                                <TextField
+                                                    name="age"
+                                                    label="Age"
+                                                    variant="outlined"
+                                                    type="number"
+                                                    fullWidth
+                                                    error={!!ageError}
+                                                    helperText={ageError}
+                                                    onChange={handleChange}
+                                                    value={formData.age}
+                                                    InputProps={{
+                                                        style: {
+                                                            fontFamily:
+                                                                "'Comfortaa', cursive",
+                                                        },
+                                                    }}
+                                                    InputLabelProps={{
+                                                        style: {
+                                                            fontFamily:
+                                                                "'Comfortaa', cursive",
+                                                        },
+                                                    }}
+                                                    FormHelperTextProps={{
+                                                        style: {
+                                                            fontFamily:
+                                                                "'Comfortaa', cursive",
+                                                        },
+                                                    }}
+                                                />
+                                            
                                                 <TextField
                                                     name="password"
                                                     label="Create Password"
@@ -267,17 +309,18 @@ function Register() {
                                                         ":hover": {
                                                             backgroundColor:
                                                                 "#e695b0",
+                                                               
                                                         },
                                                     }}>
-                                                    Sign Up
+                                                    <span style={{fontFamily: "'Emilys Candy', cursive"}}>Sign Up</span>
                                                 </Button>
                                             </div>
                                         </div>
 
-                                        <div className=" font-Bungee text-xs font mt-5">
-                                            <span>Already a member? </span>
+                                        <div className=" font-Bungee text-1 font mt-5">
+                                            <span style={{fontFamily: "'Emilys Candy', cursive"}}>Already a member? </span>
                                             <Link to="/">
-                                                <span className=" underline hover:text-blue-500">
+                                                <span className=" underline hover:text-blue-500" style={{fontFamily: "'Emilys Candy', cursive"}}>
                                                     {" "}
                                                     Log-in
                                                 </span>
@@ -288,35 +331,27 @@ function Register() {
                             </form>
                         </div>
 
-                        <div className="w-full md:w-[300px] xl:w-[300px] h-[600px] bg-pink-300 rounded-br-2xl md:rounded-bl-none rounded-2xl md:rounded-none hidden md:block">
-                            <div className=" w-full relative">
-                                <div className=" ml-10 mt-24 font-2">
-                                    <img
-                                        src={calendar}
-                                        alt="calendar-logo"
-                                        className="h-36 w-36"
-                                    />
-                                </div>
-                                <div className="ml-10 my-10 space-y-5">
-                                    <p className=" text-4xl font-Bungee font-2 ">
-                                        TRACK
-                                    </p>
-                                    <p className=" text-2xl font-Bungee font-2">
-                                        YOUR
-                                    </p>
-                                    <p className=" text-4xl font-Bungee font-2 animate-pulse">
-                                        MENSTRUAL
-                                    </p>
-                                    <p className=" text-2xl font-Bungee font-2">
-                                        CYCLE
-                                    </p>
+                        <div className="w-full md:w-[300px] relative z-50 xl:w-[300px] h-[600px] bg-pink-200 rounded-br-2xl md:rounded-bl-none rounded-2xl md:rounded-none hidden md:block">
+                                <div className=" w-full relative">
+                                    <div className=" ml-10 mt-24 font-2">
+                                        <img
+                                            src={logo}
+                                            alt="calendar-logo"
+                                            className="h-50 w-50"
+                                        />
+                                    </div>
+                                    <div className="flex items-start justify-center ml-3 mt-[-36px] mb-5 space-y-5">
+                                        <p className=" text-4xl font-EmilysCandy animate-pulse text-pink-800">
+                                            CycleCare
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        
     );
 }
 

@@ -23,6 +23,9 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { CiCalendarDate } from "react-icons/ci";
 import logo from "../../components/assets/images/cycle-logo.png";
 
+
+
+
 function Navbar() {
     const [user, setUser] = useState({ username: "", email: "", avatar: "" });
     const [anchorEl, setAnchorEl] = useState(null);
@@ -85,15 +88,17 @@ function Navbar() {
                     isNavExpanded
                         ? "lg:w-3/4 lg:h-20 sm:h-14 "
                         : "lg:w-1/2 h-14 "
-                } sm:w-full flex justify-between sm:my-0 bg-pink-200  lg:rounded-b-xl font-Comfortaa `}>
-                <img
-                    src={logo}
-                    alt="Logo"
-                    style={{
-                        height: isNavExpanded ? "80px" : "50px", // Adjust sizes as needed
-                        width: isNavExpanded ? "80px" : "50px",
-                    }}
-                />
+                } sm:w-full flex justify-between sm:my-0 bg-pink-300  lg:rounded-b-xl font-Comfortaa `}>
+                <Link to="/main">
+                    <img
+                        src={logo}
+                        alt="Logo"
+                        style={{
+                            height: isNavExpanded ? "80px" : "50px", // Adjust sizes as needed
+                            width: isNavExpanded ? "80px" : "50px",
+                        }}
+                    />
+                </Link>
 
                 <div className="flex items-center space-x-10 mx-auto">
                     {isNavExpanded ? (
@@ -140,9 +145,11 @@ function Navbar() {
                                         </div>
                                     )}
                                 </div>
-
+                                
                                 <div className="text-center cursor-pointer hover:text-red-400">
-                                    <ContactsIcon /> <p>Contact Us</p>
+                                    <Link to="/contact">
+                                        <ContactsIcon /> <p>Contact Us</p>
+                                    </Link>
                                 </div>
                             </div>
                         </>

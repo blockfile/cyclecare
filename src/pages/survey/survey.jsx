@@ -42,7 +42,7 @@ function Survey() {
     };
 
     return (
-        <div className="flex h-screen bg-gray-100">
+        <div className="flex h-screen bg-pink-200">
             <div className="m-auto">
                 <div className="shadow-2xl rounded-2xl overflow-hidden mx-4">
                     <div className="md:flex">
@@ -51,11 +51,11 @@ function Survey() {
                                 onSubmit={handleSubmit}
                                 className="flex flex-col">
                                 <div className="mx-10 mt-10">
-                                    <span className="text-5xl font-Comfortaa text-red-400">
+                                    <span className="text-5xl text-bold font-SourGummy text-pink-400">
                                         What is your Menstrual Cycle?
                                     </span>
                                 </div>
-                                <div className="mx-10 mt-5 space-y-5">
+                                <div className="mx-10 mt-5 space-y-5 font-SourGummy">
                                     {["21 days", "28 days", "35 days"].map(
                                         (option) => (
                                             <div

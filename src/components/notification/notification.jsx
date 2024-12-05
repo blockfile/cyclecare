@@ -97,13 +97,13 @@ const PeriodNotification = ({ cycleData }) => {
             }}>
             {isExpanded ? (
                 <div
-                    className="bg-pink-500 text-white p-4 rounded-lg shadow-lg"
+                    className="bg-pink-500 text-white p-4 rounded-lg shadow-lg text-1xl"
                     onClick={() => setIsExpanded(false)}>
                     {notificationMessage}
                 </div>
             ) : (
                 <MdNotifications
-                    size={24}
+                    size={32}
                     onClick={() => setIsExpanded(true)}
                 />
             )}

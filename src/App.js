@@ -12,6 +12,8 @@ import Survey2 from "./pages/survey/survey2";
 import PeriodNotification from "../src/components/notification/notification"; // Import the notification component
 import axios from "axios"; // Assuming you're fetching cycleData from an API
 import MoodTracker from "./pages/moodtracker/moodtracker";
+import Contact from "./pages/contact/contact";
+
 function App() {
     const [cycleData, setCycleData] = useState(null); // State to hold cycle data
 
@@ -55,6 +57,15 @@ function App() {
                 {
                     path: "/profile",
                     element: <Profile />,
+                },
+            ],
+        },
+        {
+            element: <ProtectedRoute />,
+            children: [
+                {
+                    path: "/contact",
+                    element: <Contact />,
                 },
             ],
         },

@@ -20,7 +20,7 @@
     width: 100px;
     padding: 8px 16px;
     margin: 20px;
-    background-color: #ff7043; /* Stylish orange */
+    background-color: #ec4899; /* Stylish orange */
     color: white;
     text-align: center;
     border-radius: 20px;
@@ -31,5 +31,5 @@
 }
 
 .next-button:hover {
-    background-color: #ff5722; /* Darker shade of orange */
+    background-color: #f472b6; /* Darker shade of orange */
 }

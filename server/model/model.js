@@ -13,10 +13,14 @@ const cycleCareSchema = new mongoose.Schema(
         cycle: { type: String },
         startDate: { type: Date },
         endDate: { type: Date },
+        nextPeriodPrediction: { type: Date }, // New field for predicted period
+        nextPredictionOvulation: { type: Date }, // Next ovulation prediction
+        currentOvulation: { type: Date },
         periods: [
             {
                 start: Date,
                 end: Date,
+                predicted: Boolean,
             },
         ],
         moodTracker: [

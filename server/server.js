@@ -11,6 +11,7 @@ const bcrypt = require("bcryptjs");
 const multer = require("multer");
 const storage = multer.memoryStorage(); // Store the image in memory
 const upload = multer({ storage: storage });
+const axios = require("axios");
 
 app.use(cors());
 mongoose
@@ -23,11 +24,24 @@ mongoose
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
-    if (!token) return res.sendStatus(401); // No token, return 401 Unauthorized
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403); // Invalid token, return 403 Forbidden
+    const token = authHeader && authHeader.split(" ")[1];
 
+    if (!token) {
+        console.error("Missing token");
+        return res.status(401).json({ message: "Token missing or invalid" });
+    }
+
+    console.log("Token received:", token);
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            console.error("Token verification failed:", err.message);
+            return res
+                .status(403)
+                .json({ message: "Token verification failed" });
+        }
+
+        console.log("Token verified successfully:", user);
         req.user = user;
         next();
     });
@@ -36,40 +50,84 @@ function authenticateToken(req, res, next) {
 app.post("/user/last-menstrual", authenticateToken, async (req, res) => {
     const { startDate, endDate } = req.body;
     const { userId } = req.user;
+
     try {
-        const updatedUser = await cycleCare.findByIdAndUpdate(
-            userId,
-            { startDate, endDate }, // Make sure these match the field names in your schema
-            { new: true }
+        const user = await cycleCare.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const cycleLength = user.cycle ? parseInt(user.cycle, 10) : 28;
+
+        const nextPeriodPrediction = new Date(endDate);
+        nextPeriodPrediction.setDate(
+            nextPeriodPrediction.getDate() + cycleLength
         );
+
+        const currentOvulation = new Date(startDate);
+        currentOvulation.setDate(currentOvulation.getDate() + 14);
+
+        const nextPredictionOvulation = new Date(nextPeriodPrediction);
+        nextPredictionOvulation.setDate(nextPredictionOvulation.getDate() - 14);
+
+        user.startDate = new Date(startDate);
+        user.endDate = new Date(endDate);
+        user.periods.push({
+            start: new Date(startDate),
+            end: new Date(endDate),
+            predicted: false,
+        });
+        user.nextPeriodPrediction = nextPeriodPrediction;
+        user.currentOvulation = currentOvulation;
+        user.nextPredictionOvulation = nextPredictionOvulation;
+
+        await user.save();
+
         res.json({
-            message: "Menstrual dates updated successfully",
-            user: updatedUser,
+            message: "Menstrual dates and predictions updated successfully",
+            nextPeriodPrediction,
+            currentOvulation,
+            nextPredictionOvulation,
         });
     } catch (error) {
-        console.error("Update menstrual dates error:", error);
+        console.error("Error updating menstrual dates:", error);
         res.status(500).json({
             message: "Failed to update menstrual dates",
             error: error.message,
         });
     }
 });
+
 // Backend: Start Period Route
 app.post("/periods/start", authenticateToken, async (req, res) => {
     const { start } = req.body;
-    const userId = req.user.userId;
+    const { userId } = req.user;
 
     try {
-        // Push a new period with only a start date
+        // Calculate the ovulation date (14 days after the start)
+        const ovulationDate = new Date(start);
+        ovulationDate.setDate(ovulationDate.getDate() + 14);
+
         const updatedUser = await cycleCare.findByIdAndUpdate(
             userId,
-            { $push: { periods: { start: new Date(start), end: null } } }, // Push a new period with only a start date
+            {
+                $push: {
+                    periods: {
+                        start: new Date(start),
+                        end: null,
+                        predicted: false,
+                    },
+                },
+                currentOvulation: ovulationDate, // Update current ovulation
+            },
             { new: true }
         );
 
         res.status(200).json({
-            message: "Period started successfully",
+            message:
+                "Period started and ovulation date calculated successfully",
             periods: updatedUser.periods,
+            currentOvulation: updatedUser.currentOvulation,
         });
     } catch (error) {
         console.error("Error starting period:", error);
@@ -97,6 +155,41 @@ app.get("/user/mood-data", authenticateToken, async (req, res) => {
         res.status(500).json({
             message: "Failed to fetch mood data",
             error: error.message,
+        });
+    }
+});
+app.get("/articles", authenticateToken, async (req, res) => {
+    const { age } = req.user;
+
+    // Define search keywords based on age
+    const keywords = age < 18 ? "menstruation puberty" : "menstruation health";
+    const apiKey =
+        process.env.GNEWS_API_KEY || "fa8028e09466bbffa80d2454e7cde9d7"; // Use your gnews API key
+
+    try {
+        const response = await axios.get(
+            `https://gnews.io/api/v4/search?q=${encodeURIComponent(
+                keywords
+            )}&token=${apiKey}`
+        );
+
+        // Filter and map the articles
+        const articles = response.data.articles.map((article) => ({
+            title: article.title,
+            description: article.description || "No description available.",
+            image: article.image || "/default-image.png",
+            url: article.url,
+        }));
+
+        res.json({ articles });
+    } catch (error) {
+        console.error(
+            "Error fetching articles from GNews:",
+            error.response?.data || error.message
+        );
+        res.status(500).json({
+            message: "Failed to fetch articles from GNews",
+            error: error.response?.data || error.message,
         });
     }
 });
@@ -139,10 +232,9 @@ app.post("/user/save-mood", authenticateToken, async (req, res) => {
 // Backend: End Period Route
 app.post("/periods/end", authenticateToken, async (req, res) => {
     const { end } = req.body;
-    const userId = req.user.userId;
+    const { userId } = req.user;
 
     try {
-        // Find the most recent period that doesn't have an end date
         const user = await cycleCare.findById(userId);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -150,11 +242,29 @@ app.post("/periods/end", authenticateToken, async (req, res) => {
 
         const lastPeriod = user.periods.find((p) => !p.end);
         if (lastPeriod) {
-            lastPeriod.end = new Date(end); // Set the end date for the last period
+            lastPeriod.end = new Date(end);
+
+            const cycleLength = user.cycle ? parseInt(user.cycle, 10) : 28;
+            const nextPeriodPrediction = new Date(end);
+            nextPeriodPrediction.setDate(
+                nextPeriodPrediction.getDate() + cycleLength
+            );
+
+            const nextPredictionOvulation = new Date(nextPeriodPrediction);
+            nextPredictionOvulation.setDate(
+                nextPredictionOvulation.getDate() - 14
+            );
+
+            user.nextPeriodPrediction = nextPeriodPrediction;
+            user.nextPredictionOvulation = nextPredictionOvulation;
+
             await user.save();
 
             res.status(200).json({
-                message: "Period ended successfully",
+                message:
+                    "Period ended and next prediction updated successfully",
+                nextPeriodPrediction,
+                nextPredictionOvulation,
                 periods: user.periods,
             });
         } else {
@@ -266,17 +376,24 @@ app.put("/user/update", authenticateToken, async (req, res) => {
 });
 
 app.get("/user/info", authenticateToken, async (req, res) => {
+    const { userId } = req.user;
+
     try {
-        const userId = req.user.userId;
-        const user = await cycleCare.findById(userId).select("-password"); // Ensure this includes the cycle length
+        const user = await cycleCare
+            .findById(userId)
+            .select(
+                "nextPeriodPrediction nextPredictionOvulation currentOvulation periods startDate username endDate cycle"
+            );
+
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
+
         res.json({ user });
     } catch (error) {
-        console.error("Error fetching user data:", error);
+        console.error("Error fetching user info:", error);
         res.status(500).json({
-            message: "Error fetching user data",
+            message: "Error fetching user info",
             error: error.message,
         });
     }
@@ -309,7 +426,7 @@ app.post(
     }
 );
 app.post("/register", async (req, res) => {
-    const { username, email, password } = req.body;
+    const { username, email, password, age } = req.body;
     const passwordRegex = /^(?=.*[A-Z])[A-Za-z\d@$!%*#?&]{7,15}$/;
     if (!passwordRegex.test(password)) {
         return res.status(400).json({
@@ -317,6 +434,19 @@ app.post("/register", async (req, res) => {
                 "Password must be 8-16 characters long, start with an uppercase letter, and contain no spaces.",
         });
     }
+
+    const isValidAge = (age) => {
+        const minAge = 13;
+        const maxAge = 45;
+        return age >= minAge && age <= maxAge;
+    };
+
+    if (!isValidAge(age)) {
+        return res
+            .status(400)
+            .json({ message: "Age must be between 13 and 45" });
+    }
+
     try {
         // Check if the username already exists
         const userExists = await cycleCare.findOne({ username: username });
@@ -331,7 +461,12 @@ app.post("/register", async (req, res) => {
         }
 
         // If neither exist, proceed to create the new user
-        const newUser = await cycleCare.create({ username, email, password });
+        const newUser = await cycleCare.create({
+            username,
+            email,
+            password,
+            age,
+        });
         res.status(201).json({
             message: "User registered successfully",
             user: newUser,
@@ -344,6 +479,7 @@ app.post("/register", async (req, res) => {
         });
     }
 });
+
 app.get("/periods", authenticateToken, async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -383,7 +519,8 @@ app.get("/user/cycle-data", authenticateToken, async (req, res) => {
         res.json({
             start: user.startDate, // Assuming these fields exist in your schema
             end: user.endDate,
-            periods: user.periods, // Assuming 'periods' is the array with past periods
+            periods: user.periods,
+            age: user.age, // Assuming 'periods' is the array with past periods
         });
     } catch (error) {
         console.error("Error fetching cycle data:", error);
@@ -415,7 +552,7 @@ app.post("/login", async (req, res) => {
         }
 
         const token = jwt.sign(
-            { userId: user._id, username: user.username },
+            { userId: user._id, username: user.username, age: user.age },
             process.env.JWT_SECRET,
             { expiresIn: "1h" }
         );

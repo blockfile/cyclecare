@@ -11,7 +11,7 @@
 }
 
 .calendar-header {
-    background: pink; /* Or use a specific color code */
+    background: rgba(249, 168, 212, 1); /* Or use a specific color code */
     padding: 16px 10px;
     text-align: center;
 }
@@ -80,7 +80,7 @@
     transform: translate(-50%, -50%);
 }
 .menstruation {
-    background-color: #ffcccc;
+    position: relative;
 }
 .hover-info {
     border-radius: 5px;

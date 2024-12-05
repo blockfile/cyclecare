@@ -4,7 +4,6 @@ import "./calendar.css";
 import axios from "axios";
 import { Avatar } from "@mui/material";
 import Navbar from "../../components/Navbar/Navbar";
-import bg from "../../components/assets/videos/bg.mp4";
 import Footer from "../../components/Footer/Footer";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import ovule from "../../components/assets/images/ovule.png";
@@ -42,61 +41,59 @@ function CalendarMens() {
     const [menstrualCycleLength, setMenstrualCycleLength] = useState(28);
     const [menstruationPeriods, setMenstruationPeriods] = useState([]);
     const [prediction, setPrediction] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [currentOvulation, setCurrentOvulation] = useState(null);
+    const [nextPredictionOvulation, setNextPredictionOvulation] =
+        useState(null);
 
+    const [nextPeriodPrediction, setNextPeriodPrediction] = useState(null);
     const predictNextMenstruation = (periods) => {
         if (periods.length < 2) return null;
 
         periods.sort((a, b) => new Date(a.start) - new Date(b.start));
 
+        // Calculate average cycle length
         const cycleDifferences = periods
             .map((_, index) => {
                 if (index === 0) return null;
                 const prevPeriod = periods[index - 1];
                 const currentPeriod = periods[index];
-                const diff =
-                    (new Date(currentPeriod.start) - new Date(prevPeriod.end)) /
-                    (1000 * 60 * 60 * 24); // Difference in days
-                return diff;
+                return (
+                    (new Date(currentPeriod.start) -
+                        new Date(prevPeriod.start)) /
+                    (1000 * 60 * 60 * 24)
+                );
             })
             .filter(Boolean);
 
-        const isIrregular = cycleDifferences.some((diff, index) => {
-            if (index === 0) return false;
-            return Math.abs(diff - cycleDifferences[index - 1]) > 3;
-        });
-
-        const averageCycleLength =
+        const averageCycleLength = Math.round(
             cycleDifferences.reduce((a, b) => a + b, 0) /
-            cycleDifferences.length;
-
-        const lastPeriodEnd = new Date(periods[periods.length - 1].end);
-
-        const nextPeriodStart = new Date(lastPeriodEnd.getTime());
-        nextPeriodStart.setDate(
-            lastPeriodEnd.getDate() +
-                (isIrregular
-                    ? averageCycleLength
-                    : cycleDifferences[cycleDifferences.length - 1])
+                cycleDifferences.length
         );
 
-        // Predict the 5 days around the expected start
-        const day1 = new Date(nextPeriodStart.getTime());
-        const day2 = new Date(nextPeriodStart.getTime());
-        day2.setDate(nextPeriodStart.getDate() + 1);
-        const day3 = new Date(nextPeriodStart.getTime());
-        day3.setDate(nextPeriodStart.getDate() + 2);
-        const day4 = new Date(nextPeriodStart.getTime());
-        day4.setDate(nextPeriodStart.getDate() + 3);
-        const day5 = new Date(nextPeriodStart.getTime());
-        day5.setDate(nextPeriodStart.getDate() + 4);
+        const lastPeriod = periods[periods.length - 1];
+        const lastPeriodStart = new Date(lastPeriod.start);
 
-        return {
-            day1,
-            day2,
-            day3,
-            day4,
-            day5,
-        };
+        // Calculate next period start date
+        const nextPeriodStart = new Date(lastPeriodStart);
+        nextPeriodStart.setDate(lastPeriodStart.getDate() + averageCycleLength);
+
+        // Only return prediction if it's in the next month
+        const today = new Date();
+        const nextMonth = new Date(
+            today.getFullYear(),
+            today.getMonth() + 1,
+            0
+        );
+
+        if (nextPeriodStart <= nextMonth) {
+            return {
+                expectedDate: nextPeriodStart,
+                cycleLength: averageCycleLength,
+            };
+        }
+
+        return null;
     };
 
     useEffect(() => {
@@ -114,10 +111,23 @@ function CalendarMens() {
 
                 if (response.data && response.data.periods) {
                     setPastPeriods(response.data.periods);
-                    const predictedDates = predictNextMenstruation(
+                    const nextPeriod = predictNextMenstruation(
                         response.data.periods
                     );
-                    setPrediction(predictedDates);
+
+                    if (nextPeriod) {
+                        const ovulationInfo = calculateOvulation(
+                            nextPeriod.expectedDate,
+                            nextPeriod.cycleLength
+                        );
+
+                        setOvulationDays(ovulationInfo.fertileWindow);
+                        setPrediction({
+                            nextPeriod: nextPeriod.expectedDate,
+                            ovulation: ovulationInfo.ovulationDate,
+                            fertileWindow: ovulationInfo.fertileWindow,
+                        });
+                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch past periods:", error);
@@ -224,38 +234,57 @@ function CalendarMens() {
         setMenstruationPeriods((prevPeriods) => [...prevPeriods, newPeriod]);
     };
 
-    const predictFuturePeriods = () => {
+    const calculateOvulation = (nextPeriod, cycleLength) => {
+        if (!nextPeriod) return null;
+
+        // Ovulation typically occurs 14 days before the next period
+        const ovulationDate = new Date(nextPeriod);
+        ovulationDate.setDate(ovulationDate.getDate() - 14);
+
+        // Fertile window is typically 5 days before ovulation
+        const fertileWindow = [];
+        for (let i = -4; i <= 1; i++) {
+            // Fertile window: 4 days before and 1 day after ovulation
+            const fertileDay = new Date(ovulationDate);
+            fertileDay.setDate(ovulationDate.getDate() + i);
+            fertileWindow.push(fertileDay);
+        }
+
+        return {
+            ovulationDate,
+            fertileWindow,
+        };
+    };
+
+    const calculateFutureOvulations = () => {
         let lastPeriodEnd = menstruationPeriod.end || new Date();
-        const predictions = [];
         const ovulations = [];
+
         for (let i = 0; i < 24; i++) {
-            const nextStart = new Date(lastPeriodEnd.getTime());
-            nextStart.setDate(nextStart.getDate() + menstrualCycleLength);
-            const nextEnd = new Date(nextStart.getTime());
-            nextEnd.setDate(nextEnd.getDate() + 5);
+            const ovulationDay = new Date(lastPeriodEnd.getTime());
+            ovulationDay.setDate(
+                lastPeriodEnd.getDate() + menstrualCycleLength - 14
+            );
 
-            const ovulationDay = new Date(nextStart.getTime());
-            ovulationDay.setDate(nextStart.getDate() - 14);
-
+            // Fertile window is typically 5 days before ovulation
             for (let j = -4; j <= 0; j++) {
                 const fertileDay = new Date(ovulationDay);
-                fertileDay.setDate(fertileDay.getDate() + j);
+                fertileDay.setDate(ovulationDay.getDate() + j);
                 ovulations.push(fertileDay);
             }
 
-            predictions.push({ start: nextStart, end: nextEnd });
-            lastPeriodEnd = nextEnd;
+            // Move to the next cycle
+            lastPeriodEnd.setDate(
+                lastPeriodEnd.getDate() + menstrualCycleLength
+            );
         }
-        setMenstruationPeriods((prevPeriods) => [
-            ...prevPeriods,
-            ...predictions,
-        ]);
+
         setOvulationDays(ovulations);
     };
 
     useEffect(() => {
         if (menstruationPeriod.end) {
-            predictFuturePeriods();
+            calculateFutureOvulations();
         }
     }, [menstruationPeriod.end, menstrualCycleLength]);
 
@@ -295,6 +324,53 @@ function CalendarMens() {
             setMenstruationPeriod(nextPeriod);
         }
     }, [lastMenstrualDate, menstrualCycleLength]);
+
+    useEffect(() => {
+        const fetchOvulationData = async () => {
+            const token = localStorage.getItem("token");
+            try {
+                const response = await axios.get(
+                    "http://localhost:3001/user/info",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (response.data?.user) {
+                    const {
+                        currentOvulation,
+                        nextPredictionOvulation,
+                        periods,
+                    } = response.data.user;
+
+                    console.log("Fetched ovulation data:", response.data.user); // Debug logging
+
+                    setCurrentOvulation(
+                        currentOvulation ? new Date(currentOvulation) : null
+                    );
+                    setNextPredictionOvulation(
+                        nextPredictionOvulation
+                            ? new Date(nextPredictionOvulation)
+                            : null
+                    );
+                    setMenstruationPeriods(
+                        periods.map((period) => ({
+                            start: new Date(period.start),
+                            end: period.end ? new Date(period.end) : null,
+                        }))
+                    );
+                }
+            } catch (error) {
+                console.error("Failed to fetch ovulation data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchOvulationData();
+    }, []); // Empty dependency array means this runs once on component mount.
 
     const goToPreviousMonth = () =>
         setCurrentDate(
@@ -411,13 +487,26 @@ function CalendarMens() {
             currentDate.getMonth(),
             day
         );
-        return ovulationDays.some(
-            (ovulationDay) =>
-                ovulationDay.getFullYear() === checkDate.getFullYear() &&
-                ovulationDay.getMonth() === checkDate.getMonth() &&
-                ovulationDay.getDate() === checkDate.getDate()
-        );
+
+        // Check if the date falls within the 5-day ovulation range
+        return menstruationPeriods.some((period) => {
+            if (!period.start) return false;
+
+            const ovulationDate = new Date(period.start);
+            ovulationDate.setDate(ovulationDate.getDate() + 14); // 14 days after the start of the period
+
+            const startOvulation = new Date(ovulationDate);
+            startOvulation.setDate(startOvulation.getDate() - 2); // 2 days before ovulation
+
+            const endOvulation = new Date(ovulationDate);
+            endOvulation.setDate(endOvulation.getDate() + 2); // 2 days after ovulation
+
+            // Debugging logs
+
+            return checkDate >= startOvulation && checkDate <= endOvulation;
+        });
     };
+
     const isMenstruationDay = (day) => {
         const checkDate = new Date(
             currentDate.getFullYear(),
@@ -447,23 +536,102 @@ function CalendarMens() {
         return targetDate >= startDate && targetDate <= endDate;
     };
 
+    useEffect(() => {
+        const fetchNextPrediction = async () => {
+            setIsLoading(true); // Start loading
+            const token = localStorage.getItem("token");
+            try {
+                const response = await axios.get(
+                    "http://localhost:3001/user/info",
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+                if (response.data?.user) {
+                    const { nextPeriodPrediction, periods } =
+                        response.data.user;
+
+                    // Update periods and prediction states
+                    setMenstruationPeriods(
+                        periods.map((period) => ({
+                            start: new Date(period.start),
+                            end: new Date(period.end),
+                        }))
+                    );
+                    setNextPeriodPrediction(new Date(nextPeriodPrediction));
+
+                    console.log(
+                        "Fetched nextPeriodPrediction:",
+                        nextPeriodPrediction
+                    ); // Debug log
+                }
+            } catch (error) {
+                console.error("Error fetching prediction:", error);
+            } finally {
+                setIsLoading(false); // End loading
+            }
+        };
+
+        fetchNextPrediction();
+    }, []);
+
     const renderDayCells = () => {
+        if (isLoading) {
+            return <div>Loading...</div>; // Render a loading indicator
+        }
+
         const daysInMonth = new Date(
             currentDate.getFullYear(),
             currentDate.getMonth() + 1,
             0
         ).getDate();
+
         return Array.from({ length: daysInMonth }, (_, i) => {
             const day = i + 1;
-            const menstruationDay =
-                isMenstruationDay(day) || isWithinMenstruationPeriod(day);
-            const ovulationDay = isOvulationDay(day);
+            const dayDate = new Date(
+                currentDate.getFullYear(),
+                currentDate.getMonth(),
+                day
+            );
+
+            // Check if the day is a predicted next period day
+            const isNextPeriodDay =
+                nextPeriodPrediction &&
+                dayDate >= nextPeriodPrediction &&
+                dayDate <
+                    new Date(
+                        nextPeriodPrediction.getTime() + 4 * 24 * 60 * 60 * 1000
+                    );
+
+            // Check if the day is an ovulation day
+            const isOvulation = isOvulationDay(day);
+
+            // Check if the day is a menstruation day
+            const isMenstruationDay = menstruationPeriods.some((period) => {
+                const start = new Date(period.start).setHours(0, 0, 0, 0);
+                const end = new Date(period.end || new Date()).setHours(
+                    23,
+                    59,
+                    59,
+                    999
+                );
+                return dayDate >= start && dayDate <= end;
+            });
 
             const handleMouseEnter = (event) => {
-                if (ovulationDay) {
+                if (isOvulation) {
                     setHoverInfo({
                         visible: true,
-                        content: "High chance of pregnancy",
+                        content: "High Chance of Pregnancy",
+                        position: {
+                            x: event.clientX + 10,
+                            y: event.clientY + 10,
+                        },
+                    });
+                } else if (isNextPeriodDay) {
+                    setHoverInfo({
+                        visible: true,
+                        content: "Expected Start of Period",
                         position: {
                             x: event.clientX + 10,
                             y: event.clientY + 10,
@@ -483,31 +651,41 @@ function CalendarMens() {
             return (
                 <div
                     key={day}
-                    className={`day ${isToday(day) ? "today" : ""} ${
-                        menstruationDay ? "menstruation" : ""
-                    } ${ovulationDay ? "ovulation" : ""}`}
-                    onMouseEnter={handleMouseEnter}
-                    onMouseLeave={handleMouseLeave}
-                    onContextMenu={(e) => handleRightClick(e, day)}
+                    className={`day ${
+                        isMenstruationDay ? "menstruation" : ""
+                    } ${isOvulation ? "ovulation" : ""} ${
+                        isNextPeriodDay ? "next-period" : ""
+                    }`}
                     style={{
-                        backgroundColor: menstruationDay
+                        backgroundColor: isMenstruationDay
                             ? "pink"
-                            : ovulationDay
+                            : isNextPeriodDay
+                            ? "lightblue"
+                            : isOvulation
                             ? "lightgreen"
                             : "transparent",
-                        position: "relative",
+                    }}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                    onContextMenu={(event) => {
+                        event.preventDefault(); // Disable default context menu
+                        handleRightClick(event, day); // Trigger custom menu logic
                     }}>
                     {day}
-                    {menstruationDay && (
-                        <MdBloodtype className="text-red-700 z-10 absolute bottom-0 left-0 my-2 mx-2" />
+                    {isMenstruationDay && (
+                        <MdBloodtype className="text-red-700" />
                     )}
-                    {ovulationDay && (
+                    {isOvulation && (
                         <img
                             src={ovule}
-                            className="z-10 absolute top-0 right-0 mx-1 my-2"
-                            style={{ width: "20px", height: "20px" }}
                             alt="Ovulation"
+                            style={{ width: "20px", height: "20px" }}
                         />
+                    )}
+                    {isNextPeriodDay && (
+                        <div className="next-period-indicator">
+                            {/* Add a custom indicator for next period */}
+                        </div>
                     )}
                 </div>
             );
@@ -530,6 +708,31 @@ function CalendarMens() {
         return () => document.removeEventListener("click", closeMenu);
     }, []);
     const [pastPeriods, setPastPeriods] = useState([]);
+    useEffect(() => {
+        const fetchData = async () => {
+            const token = localStorage.getItem("token");
+            try {
+                const response = await axios.get(
+                    "http://localhost:3001/user/info",
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+
+                if (response.data?.user) {
+                    const { currentOvulation, nextPredictionOvulation } =
+                        response.data.user;
+                    setOvulationDays([
+                        new Date(currentOvulation),
+                        new Date(nextPredictionOvulation),
+                    ]);
+                }
+            } catch (error) {
+                console.error("Error fetching ovulation data:", error);
+            }
+        };
+        fetchData();
+    }, []);
 
     useEffect(() => {
         const fetchPastPeriods = async () => {
@@ -557,10 +760,11 @@ function CalendarMens() {
 
     return (
         <div
-            className="relative overflow-x-hidden bg-pink-50"
+            className="min-h-screen flex flex-col bg-pink-50 overflow-x-hidden"
             onClick={() => setContextMenuPos({ visible: false })}>
             <Navbar />
-            <div className="relative z-10 flex flex-col items-center h-full mt-14 mx-auto text-justify">
+            {/* Main Content */}
+            <div className="flex-grow relative z-10 flex flex-col items-center mt-14 mx-auto text-justify">
                 <div>
                     <div className="flex space-x-3 mx-2 py-1 pt-10 justify-center">
                         <div className="border rounded-full">
@@ -640,16 +844,15 @@ function CalendarMens() {
 
                         {/* Menstrual History Section */}
                         <div
-                            className={`bg-pink-100 py-4 px-8 rounded-lg h-[566px]   font-Comfortaa transition-all duration-500 overflow-hidden ${
+                            className={`bg-pink-100 py-4 px-8 rounded-lg h-[566px] font-Comfortaa transition-all duration-500 overflow-hidden ${
                                 showHistory
                                     ? "w-1/3 mt-4 mb-4 opacity-100 "
                                     : "w-0 opacity-0"
                             }`}>
                             {showHistory && (
                                 <>
-                                    {" "}
-                                    <div className=" border-b-2 mb-2">
-                                        <h2 className="text-xl font-bold mb-4 ">
+                                    <div className="border-b-2 mb-2">
+                                        <h2 className="text-xl font-bold mb-4">
                                             Menstrual History
                                         </h2>
                                     </div>
@@ -700,7 +903,9 @@ function CalendarMens() {
                     </div>
                 )}
             </div>
+            {/* Footer */}
             <Footer />
+
             {contextMenuPos.visible && (
                 <div
                     className="custom-context-menu"

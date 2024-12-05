@@ -5,7 +5,6 @@ import Button from "@mui/material/Button";
 import { IconButton, InputAdornment } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import logo from "../../components/assets/images/cycle-logo.png";
-import calendar from "../../components/assets/images/calendar.png";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 
@@ -62,8 +61,11 @@ function Login() {
     };
 
     return (
+
+        
         <div>
-            <div className="flex h-screen bg-gray-100 ">
+         
+             <div className="flex h-screen bg-gradient-to-r from-pink-100 via-pink-200 to-pink-300">
                 <div className="m-auto">
                     <div className="shadow-2xl rounded-2xl overflow-hidden mx-4">
                         <div className="md:flex ">
@@ -80,7 +82,7 @@ function Login() {
                                 <form onSubmit={handleSubmit} className=" ">
                                     <div className="pb-10 pl-10 pr-10 space-y-2">
                                         <div>
-                                            <span className="text-4xl font-Bungee font">
+                                            <span className="text-4xl font-EmilysCandy font">
                                                 Login
                                             </span>
                                             <span className=" text-7xl text-pink-300 animate-pulse">
@@ -196,14 +198,15 @@ function Login() {
                                                                     "#e695b0",
                                                             },
                                                         }}>
-                                                        Login
+                                                        <span style={{fontFamily: "'Emilys Candy', cursive"}}>Log in</span>
                                                     </Button>
+                                                     
                                                 </div>
                                             </div>
-                                            <div className=" font-Bungee text-xs font mt-14 ">
-                                                <span>New to Cyclecare? </span>
+                                            <div className=" font-Bungee text-1xl font mt-14 ">
+                                                <span style={{fontFamily: "'Emilys Candy', cursive"}}>New to Cyclecare? </span>
                                                 <Link to="/register">
-                                                    <span className="underline hover:text-blue-500">
+                                                    <span className="underline hover:text-blue-500" style={{fontFamily: "'Emilys Candy', cursive"}}>
                                                         {" "}
                                                         Create an Account
                                                     </span>
@@ -223,7 +226,7 @@ function Login() {
                                         />
                                     </div>
                                     <div className="flex items-start justify-center ml-3 mt-[-36px] mb-5 space-y-5">
-                                        <p className=" text-3xl font-Bungee font-2 animate-pulse">
+                                    <p className=" text-4xl font-EmilysCandy animate-pulse text-pink-800">
                                             CycleCare
                                         </p>
                                     </div>

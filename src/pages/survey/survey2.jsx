@@ -6,6 +6,9 @@ import { useNavigate } from "react-router-dom";
 function Survey2() {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
+    const [prediction, setPrediction] = useState(null); // Next period prediction
+    const [currentOvulation, setCurrentOvulation] = useState(null); // Current ovulation
+    const [nextOvulation, setNextOvulation] = useState(null); // Next ovulation prediction
     const navigate = useNavigate();
 
     const handleSubmit = async (event) => {
@@ -15,8 +18,9 @@ function Survey2() {
             alert("Please log in to save data.");
             return;
         }
+
         try {
-            await axios.post(
+            const response = await axios.post(
                 "http://localhost:3001/user/last-menstrual",
                 { startDate, endDate },
                 {
@@ -25,7 +29,30 @@ function Survey2() {
                     },
                 }
             );
-            alert("Menstrual dates saved successfully!");
+
+            const {
+                nextPeriodPrediction,
+                currentOvulation,
+                nextPredictionOvulation,
+            } = response.data;
+
+            setPrediction(nextPeriodPrediction);
+            setCurrentOvulation(currentOvulation);
+            setNextOvulation(nextPredictionOvulation);
+
+            alert(
+                `Menstrual dates saved successfully!
+                Next period: ${new Date(
+                    nextPeriodPrediction
+                ).toLocaleDateString()}.
+                Current ovulation: ${new Date(
+                    currentOvulation
+                ).toLocaleDateString()}.
+                Next ovulation: ${new Date(
+                    nextPredictionOvulation
+                ).toLocaleDateString()}.`
+            );
+
             navigate("/main");
         } catch (error) {
             console.error("Error saving menstrual dates:", error);
@@ -34,14 +61,14 @@ function Survey2() {
     };
 
     return (
-        <div className="flex h-screen bg-gray-100">
+        <div className="flex h-screen bg-pink-200">
             <div className="m-auto">
                 <form
                     onSubmit={handleSubmit}
                     className="shadow-2xl rounded-2xl overflow-hidden mx-4 md:flex">
                     <div className="w-full relative z-50 md:w-[400px] xl:w-[600px] h-[500px] bg-purple-100 rounded-2xl">
                         <div className="mx-10 mt-10">
-                            <span className="text-5xl font-Comfortaa text-red-400">
+                            <span className="text-5xl font-SourGummy text-pink-400">
                                 Enter your last menstrual period dates
                             </span>
                         </div>
@@ -52,6 +79,7 @@ function Survey2() {
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
                                 className="border-2 rounded-lg border-red-400 p-2 w-full"
+                                required
                             />
                             <label>End Date:</label>
                             <input
@@ -59,6 +87,7 @@ function Survey2() {
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
                                 className="border-2 rounded-lg border-red-400 p-2 w-full"
+                                required
                             />
                         </div>
                         <button type="submit" className="next-button mt-5">

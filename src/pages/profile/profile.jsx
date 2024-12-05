@@ -3,11 +3,11 @@ import axios from "axios";
 import "./profile.css"; // For custom styles
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
+
 import { Avatar, Button } from "@mui/material";
 
 function Profile() {
     const [user, setUser] = useState({ username: "", email: "", avatar: "" });
-    const [isHovering, setIsHovering] = useState(false);
     const fileInputRef = useRef(null);
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({
@@ -18,7 +18,7 @@ function Profile() {
         lastPeriod: "",
         irregular: "", // This will store "Yes" or "No"
     });
-    const [errors, setErrors] = useState({});
+    const [, setErrors] = useState({});
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -115,9 +115,9 @@ function Profile() {
         <div>
             <Navbar />
 
-            <div className="profile-page">
+            <div className="profile-page h-screen w-full">
                 <div className="profile-container">
-                    <h2 className=" text-3xl">Customize your profile</h2>
+                    <h2 className=" text-3xl font-SourGummy">Customize your profile</h2>
                     <div className="avatar-container">
                         <Avatar
                             src={
@@ -204,7 +204,7 @@ function Profile() {
                         )}
                     </form>
                 </div>
-                <Footer />
+<Footer />
             </div>
         </div>
     );
